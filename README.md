@@ -1,6 +1,6 @@
 # alfred-waiter
 
-<div style="text-align:center"><img src ="./app/assets/images/icon.png" /></div>
+<p align="center"><img src ="./app/assets/images/icon.png" /></p>
 
 Simple mobile app to order food from your restaurant table. Stop waiting for the waiter to arrive!
 
