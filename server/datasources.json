@@ -1,0 +1,7 @@
+{
+  "db": {
+    "url": "mongodb://localhost:27017/alfred-waiter",
+    "name": "db",
+    "connector": "mongodb"
+  }
+}
