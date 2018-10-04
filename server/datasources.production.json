@@ -1,0 +1,5 @@
+{
+  "db": {
+    "url": "${MONGODB_URI}"
+  }
+}
