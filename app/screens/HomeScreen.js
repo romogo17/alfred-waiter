@@ -187,7 +187,7 @@
 //   },
 // });
 
-import React, { Component } from 'react';
+import React, {Component} from 'react';
 import {
   Alert,
   Linking,
@@ -200,10 +200,9 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import { BarCodeScanner, Permissions } from 'expo';
+import {BarCodeScanner, Permissions} from 'expo';
 
 export default class HomeScreen extends Component {
-
   static navigationOptions = {
     header: null,
   };
@@ -217,7 +216,7 @@ export default class HomeScreen extends Component {
   }
 
   _requestCameraPermission = async () => {
-    const { status } = await Permissions.askAsync(Permissions.CAMERA);
+    const {status} = await Permissions.askAsync(Permissions.CAMERA);
     this.setState({
       hasCameraPermission: status === 'granted',
     });
@@ -226,33 +225,34 @@ export default class HomeScreen extends Component {
   _handleBarCodeRead = result => {
     if (result.data !== this.state.lastScannedUrl) {
       LayoutAnimation.spring();
-      this.setState({ lastScannedUrl: result.data });
+      console.log({result});
+      this.setState({
+        lastScannedUrl: result.data.substring(7, result.data.length),
+      });
     }
   };
 
   render() {
     return (
       <View style={styles.container}>
-      
-
-        {this.state.hasCameraPermission === null
-          ? <Text>Requesting for camera permission</Text>
-          : this.state.hasCameraPermission === false
-              ? <Text style={{ color: '#fff' }}>
-                  Camera permission is not granted
-                </Text>
-              : <BarCodeScanner
-                  onBarCodeRead={this._handleBarCodeRead}
-                  style={{
-                    height: Dimensions.get('window').height,
-                    width: Dimensions.get('window').width,
-                  }}
-                  >
-                  <Image
-                    source={require('../assets/images/scan-splash.png')}
-                    style={ styles.cameraImage }
-                  />
-                  </BarCodeScanner>}
+        {this.state.hasCameraPermission === null ? (
+          <Text>Requesting for camera permission</Text>
+        ) : this.state.hasCameraPermission === false ? (
+          <Text style={{color: '#fff'}}>Camera permission is not granted</Text>
+        ) : (
+          <BarCodeScanner
+            onBarCodeRead={this._handleBarCodeRead}
+            style={{
+              height: Dimensions.get('window').height,
+              width: Dimensions.get('window').width,
+            }}
+          >
+            <Image
+              source={require('../assets/images/scan-splash.png')}
+              style={styles.cameraImage}
+            />
+          </BarCodeScanner>
+        )}
 
         {this._maybeRenderUrl()}
 
@@ -270,14 +270,14 @@ export default class HomeScreen extends Component {
           text: 'Yes',
           onPress: () => Linking.openURL(this.state.lastScannedUrl),
         },
-        { text: 'No', onPress: () => {} },
+        {text: 'No', onPress: () => {}},
       ],
-      { cancellable: false }
+      {cancellable: false}
     );
   };
 
   _handlePressCancel = () => {
-    this.setState({ lastScannedUrl: null });
+    this.setState({lastScannedUrl: null});
   };
 
   _maybeRenderUrl = () => {
@@ -294,10 +294,9 @@ export default class HomeScreen extends Component {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.cancelButton}
-          onPress={this._handlePressCancel}>
-          <Text style={styles.cancelButtonText}>
-            Cancel
-          </Text>
+          onPress={this._handlePressCancel}
+        >
+          <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
       </View>
     );
@@ -337,9 +336,9 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   cameraImage: {
-    position: 'relative', 
+    position: 'relative',
     flex: 1,
     height: Dimensions.get('window').height,
-    width: Dimensions.get('window').width
-  }
+    width: Dimensions.get('window').width,
+  },
 });
