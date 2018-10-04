@@ -14,7 +14,8 @@
     ]
   },
   "User": {
-    "dataSource": "db"
+    "dataSource": "db",
+    "public": false
   },
   "AccessToken": {
     "dataSource": "db",
@@ -34,5 +35,25 @@
   "Role": {
     "dataSource": "db",
     "public": false
+  },
+  "franchises": {
+    "dataSource": "db",
+    "public": true
+  },
+  "menus": {
+    "dataSource": "db",
+    "public": true
+  },
+  "tables": {
+    "dataSource": "db",
+    "public": true
+  },
+  "orders": {
+    "dataSource": "db",
+    "public": true
+  },
+  "bills": {
+    "dataSource": "db",
+    "public": true
   }
 }
