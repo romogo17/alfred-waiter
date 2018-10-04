@@ -1,6 +1,11 @@
 {
   "db": {
+    "host": "localhost",
+    "port": 27017,
+    "database": "alfred-waiter",
+    "password": "",
     "name": "db",
-    "connector": "memory"
+    "user": "",
+    "connector": "mongodb"
   }
 }
