@@ -11,9 +11,7 @@
       "required": true
     },
     "items": {
-      "type": [
-        "object"
-      ],
+      "type": ["object"],
       "required": true
     },
     "createdAt": {
