@@ -73,20 +73,6 @@ export default class MenuScreen extends React.Component {
                 tags: ['l', 'm'],
                 imageUrl: 'https://www.infobae.com/new-resizer/-AU5yITpCjSXYx8cRXI43OAvP1c=/600x0/filters:quality(100)/s3.amazonaws.com/arc-wordpress-client-uploads/infobae-wp/wp-content/uploads/2018/09/08130747/semana-de-la-pizza-1920-5.jpg',
               },
-              {
-                key: 'Salad',
-                price: 5500,
-                currency: '₡',
-                tags: ['a', 'b', 'c', 'd', 'e'],
-                imageUrl: 'https://www.skinnytaste.com/wp-content/uploads/2018/04/Chopped-Salad-with-Shrimp-Blue-Cheese-and-Bacon-1.jpg',
-              },
-              {
-                key: 'Beef',
-                price: 2800,
-                currency: '₡',
-                tags: ['f', 'g'],
-                imageUrl: 'https://hips.hearstapps.com/del.h-cdn.co/assets/17/38/2048x1365/gallery-1506010658-beef-tenderloin-delish.jpg?resize=480:*',
-              },
             ]}
             renderItem={({ item }) => (
               <View style={styles.food_item}>

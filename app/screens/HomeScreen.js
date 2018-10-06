@@ -1,7 +1,7 @@
 import React, {Component} from 'react';
 import {
   Alert,
-  Linking,
+  Platform,
   Dimensions,
   LayoutAnimation,
   Text,
@@ -9,8 +9,10 @@ import {
   StatusBar,
   StyleSheet,
   Image,
+  Button
 } from 'react-native';
 import {BarCodeScanner, Permissions} from 'expo';
+import { Ionicons } from '@expo/vector-icons';
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
@@ -21,6 +23,7 @@ export default class HomeScreen extends Component {
     lastTableId: null,
     isTaken: null,
     isLoading: null,
+    restaurantName: null,
     dataSource: null
   };
 
@@ -48,7 +51,6 @@ export default class HomeScreen extends Component {
   };
 
   render() {
-    const {navigate} = this.props.navigation
     if(this.state.isLoading === null){
       return (
         <View style={styles.containerPrincipal}>
@@ -84,12 +86,12 @@ export default class HomeScreen extends Component {
               <View style={styles.welcomeContainer}>
                 <Image
                   source={require('../assets/images/loading.gif')}
-                  style={styles.welcomeImage}
+                  style={styles.loadingImage}
                 />
               </View>
     
               <View style={styles.getStartedContainer}>
-                <Text style={styles.getStartedText}>Loading</Text>
+                <Text style={styles.getStartedText}>Loading...</Text>
               </View>
               {this.maybeRenderUrl()}
 
@@ -102,14 +104,12 @@ export default class HomeScreen extends Component {
           return (
             <View style={styles.container}>
                 <View style={styles.welcomeContainer}>
-                  <Image
-                    source={require('../assets/images/robot-dev.png')}
-                    style={styles.welcomeImage}
-                  />
+                  <Ionicons name={ Platform.OS === 'ios' ? `ios-close-circle` : 'md-close-circle' } size={150} color="red" />
                 </View>
       
                 <View style={styles.getStartedContainer}>
-                  <Text style={styles.getStartedText}>This table is take, plase try another one.</Text>
+                  <Text style={styles.errorText}>This table is taken, plase try another one.{"\n"}Thanks.</Text>
+                  <Text style={styles.rightText}>&nbsp; – {this.state.restaurantName}</Text>
                 </View>
                 {this.maybeRenderUrl()}
         
@@ -121,16 +121,20 @@ export default class HomeScreen extends Component {
           return (
             <View style={styles.container}>
                 <View style={styles.welcomeContainer}>
-                  <Image
-                    source={require('../assets/images/robot-dev.png')}
-                    style={styles.welcomeImage}
-                  />
+                  <Ionicons name={ Platform.OS === 'ios' ? `ios-checkmark-circle` : 'md-checkmark-circle' } size={150} color="green" />
                 </View>
       
                 <View style={styles.getStartedContainer}>
-                  <Text style={styles.getStartedText}>Welcome to: restaurantName</Text>
+                  <Text style={styles.getStartedText}>Welcome to: {"\n"}{this.state.restaurantName}</Text> 
                 </View>
-              {this.maybeRenderUrl()}
+                {this.maybeRenderUrl()}
+
+                <Button
+                  onPress={this.gotoMenu}
+                  title="Go to Menu"
+                  accessibilityLabel="Go to Menu"
+                  style={styles.buttonMenu}
+                />
 
               <StatusBar hidden />
             </View>
@@ -166,15 +170,23 @@ export default class HomeScreen extends Component {
           console.log('loading '+this.state.isLoading)
             // hacer el otro fetch 
             // .then(menu => navegar a la otra vista)
+          fetch(`http://alfred-waiter.herokuapp.com/api/tables/${tableId}/franchise`)
+          .then((response) => response.json())
+          .then((responseJson) => {
+            console.log(responseJson)
+            this.setState({
+              restaurantName: responseJson.name,
+            });
+            console.log('restaurant '+this.state.restaurantName)
+          })
+          .catch((error) =>{
+            console.error(error);
+          });
         })
         .catch((error) =>{
           console.error(error);
         });
     }
-  };
-
-  handlePressCancel = () => {
-    this.setState({lastTableId: null});
   };
 
   maybeRenderUrl = () => {
@@ -184,6 +196,11 @@ export default class HomeScreen extends Component {
 
     console.log(this.state.lastTableId)
     this.handleCode(this.state.lastTableId)
+  };
+
+  gotoMenu = () => {
+    const {navigate} = this.props.navigation
+    navigate('Menu', {tableId: this.state.lastTableId})
   };
 }
 
@@ -211,7 +228,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 20,
   },
-  welcomeImage: {
+  loadingImage: {
     width: 100,
     height: 80,
     resizeMode: 'contain',
@@ -223,9 +240,26 @@ const styles = StyleSheet.create({
     marginHorizontal: 50,
   },
   getStartedText: {
-    fontSize: 17,
+    fontSize: 25,
     color: 'rgba(96,100,109, 1)',
     lineHeight: 24,
     textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  errorText: {
+    fontSize: 17,
+    color: 'rgba(96,100,109, 1)',
+    lineHeight: 24,
+    textAlign: 'justify',
+  },
+  rightText: {
+    fontSize: 17,
+    color: 'rgba(96,100,109, 1)',
+    lineHeight: 24,
+    textAlign: 'right',
+  },
+  buttonMenu: {
+    backgroundColor: "#fff",
+    color: "#86b0f4",
   },
 });
