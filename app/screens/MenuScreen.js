@@ -10,12 +10,19 @@ import {
   FlatList,
   Text,
   View,
+  TouchableHighlight,
   Button,
+  Platform
 } from 'react-native';
+import Ripple from 'react-native-material-ripple';//Source: https://www.npmjs.com/package/react-native-material-ripple
 var order = {}//Datos de la orden a realizarse
 export default class MenuScreen extends React.Component {
   static navigationOptions = {
     title: 'Menu',
+
+  };
+  _placeOrder = () => {
+
   };
   number = 0;
   render() {
@@ -31,7 +38,7 @@ export default class MenuScreen extends React.Component {
             <Text style={{ color: "#fff", fontSize: 9, fontWeight: "bold", textAlign: "center" }}>Delivery Time</Text>
           </View>
           <View style={{ height: "100%", flex: 1, alignContent: "center", justifyContent: "center", }}>
-            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold", textAlign: "center" }}>0</Text>
+            <Text style={{ color: "#fff", fontSize: 20, fontWeight: "bold", textAlign: "center" }}>₡ 0</Text>
             <Text style={{ color: "#fff", fontSize: 9, fontWeight: "bold", textAlign: "center" }}>Total Price</Text>
           </View>
         </View>
@@ -101,7 +108,7 @@ export default class MenuScreen extends React.Component {
                       {item.key}
                     </Text>
                   </View>
-                  <View style={{flexDirection: 'row', flexWrap: 'wrap' }}>
+                  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                     {item.tags.map(i => {
                       return (
                         <Text
@@ -115,7 +122,7 @@ export default class MenuScreen extends React.Component {
                   <View style={{ marginRight: 2, marginTop: 10 }}>
                     <Text
                       style={styles.food_price}>
-                      { item.currency + ' ' + item.price }
+                      {item.currency + ' ' + item.price}
                     </Text>
                   </View>
                 </View>
@@ -126,33 +133,38 @@ export default class MenuScreen extends React.Component {
                     justifyContent: 'space-between',
                   }}
                 >
-                  <View
+                  <Ripple rippleColor={"#rgba(255,255,255,0.9)"}
                     onPress={() => { this.number++ }}
                   >
                     <Text style={{ borderRadius: 3, textAlign: "center", color: "#fff", fontWeight: "bold", backgroundColor: "#5EBA7D", padding: 5, }}>
                       +
                   </Text>
-                  </View>
+                  </Ripple>
                   <View>
                     <Text style={{ borderRadius: 3, textAlign: "center", color: "#999", fontWeight: "bold", backgroundColor: "#e5e5e5", padding: 5, }}>
                       {this.number}
                     </Text>
                   </View>
-                  <View
+                  <Ripple rippleColor={"#rgba(255,255,255,0.9)"}
                     onPress={() => { this.number-- }}
                   >
                     <Text style={{ borderRadius: 3, textAlign: "center", color: "#fff", fontWeight: "bold", backgroundColor: "#dc3545", padding: 5, }}>
                       -
                   </Text>
-                  </View>
+                  </Ripple>
                 </View>
               </View>
             )}
           />
         </ScrollView>
-        <View /*style={{backgroundColor:"rgba(0,0,0,0)", position:"absolute", bottom:0, width:"100%" }}*/>
-          <Text style={styles.button_place_order}>Place Order</Text>
-        </View>
+        <Ripple rippleColor={"#rgba(255,255,255,0.8)"} rippleContainerBorderRadius={20} style={styles.button_place_order}>
+          <Text style={{
+            color: "#fff",
+            fontWeight: "bold",
+            fontSize: 20,
+            textAlign: "center",
+          }}>Place Order</Text></Ripple>
+
       </View>
     );
   }
@@ -206,10 +218,7 @@ const styles = StyleSheet.create({
     paddingRight: 5,
     paddingTop: 5,
     paddingBottom: 5,
-    //backgroundColor: colors.tintColor,
-    //textAlign: "center",
     padding: 5,
-    //borderRadius: 5,
   },
   food_image: {
     width: 100,
@@ -225,10 +234,6 @@ const styles = StyleSheet.create({
   button_place_order: {
     borderRadius: 20,
     backgroundColor: "#5EBA7D",
-    color: "#fff",
-    fontWeight: "bold",
-    fontSize: 20,
-    textAlign: "center",
     marginRight: 15,
     marginLeft: 15,
     marginTop: 5,
