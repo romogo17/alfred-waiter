@@ -11,15 +11,18 @@
     },
     "total": {
       "type": "number",
-      "required": true
+      "required": true,
+      "default": 0
     },
     "subtotal": {
       "type": "number",
-      "required": true
+      "required": true,
+      "default": 0
     },
     "tax": {
       "type": "number",
-      "required": true
+      "required": true,
+      "default": 0
     },
     "createdAt": {
       "type": "date",
