@@ -1,5 +1,4 @@
 import React from 'react';
-import colors from '../constants/Colors.js';
 import {
   ScrollView,
   AppRegistry,
@@ -12,13 +11,27 @@ import {
   View,
   Button,
 } from 'react-native';
+
 var order = {}//Datos de la orden a realizarse
+
 export default class MenuScreen extends React.Component {
   static navigationOptions = {
     title: 'Menu',
   };
+
+  state = {
+    tableId: null,
+    menuData: null
+  };
+
   number = 0;
   render() {
+    const { navigation } = this.props;
+    const lastTableId = navigation.getParam('tableId');
+    // console.log(lastTableId)
+    if(lastTableId !== null){
+      {this.fetchMenu(lastTableId)}
+    }
     return (
       <View style={{ backgroundColor: "#fff", height: "100%" }}>
         <View style={{ backgroundColor: "#5EBA7D", flexDirection: "row", justifyContent: "center", alignContent: "center", alignItems: "center", height: 55 }}>
@@ -142,6 +155,26 @@ export default class MenuScreen extends React.Component {
       </View>
     );
   }
+
+  fetchMenu = (tableId) => {
+    // this.setState({
+    //   tableId: tableId
+    // })
+    console.log('table '+tableId)
+    // if(this.state.menuData !== null){
+      return fetch(`http://alfred-waiter.herokuapp.com/api/tables/${tableId}/menu`)
+        .then((response) => response.json())
+        .then((responseJson) => {
+          console.log(responseJson)
+          // this.setState({
+          //   menuData: responseJson,
+          // });
+        })
+        .catch((error) =>{
+          console.error(error);
+        });
+    // }
+  };
 }
 
 const styles = StyleSheet.create({

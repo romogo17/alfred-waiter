@@ -51,6 +51,11 @@ export default class HomeScreen extends Component {
   };
 
   render() {
+    //Puede funcionar para cuando se haga lo del pedido y que la mesa ya no esta ocupada.
+    // const { navigation } = this.props;
+    // const isLoading = navigation.getParam('isLoading');
+    // const isTaken = navigation.getParam('isTaken');
+    // console.log("loading "+isLoading+" taken " + isTaken)
     if(this.state.isLoading === null){
       return (
         <View style={styles.containerPrincipal}>
