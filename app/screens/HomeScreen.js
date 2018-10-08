@@ -1,206 +1,18 @@
-// import React from 'react';
-// import {
-//   Image,
-//   Platform,
-//   ScrollView,
-//   StyleSheet,
-//   Text,
-//   TouchableOpacity,
-//   View,
-// } from 'react-native';
-// import { WebBrowser } from 'expo';
-
-// import { MonoText } from '../components/StyledText';
-
-// export default class HomeScreen extends React.Component {
-//   static navigationOptions = {
-//     header: null,
-//   };
-
-//   render() {
-//     return (
-//       <View style={styles.container}>
-//         <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-//           <View style={styles.welcomeContainer}>
-//             <Image
-//               source={
-//                 __DEV__
-//                   ? require('../assets/images/robot-dev.png')
-//                   : require('../assets/images/robot-prod.png')
-//               }
-//               style={styles.welcomeImage}
-//             />
-//           </View>
-
-//           <View style={styles.getStartedContainer}>
-//             {this._maybeRenderDevelopmentModeWarning()}
-
-//             <Text style={styles.getStartedText}>Get started by opening</Text>
-
-//             <View style={[styles.codeHighlightContainer, styles.homeScreenFilename]}>
-//               <MonoText style={styles.codeHighlightText}>screens/HomeScreen.js</MonoText>
-//             </View>
-
-//             <Text style={styles.getStartedText}>
-//               Change this text and your app will automatically reload.
-//             </Text>
-//           </View>
-
-//           <View style={styles.helpContainer}>
-//             <TouchableOpacity onPress={this._handleHelpPress} style={styles.helpLink}>
-//               <Text style={styles.helpLinkText}>Help, it didn’t automatically reload!</Text>
-//             </TouchableOpacity>
-//           </View>
-//         </ScrollView>
-
-//         <View style={styles.tabBarInfoContainer}>
-//           <Text style={styles.tabBarInfoText}>This is a tab bar. You can edit it in:</Text>
-
-//           <View style={[styles.codeHighlightContainer, styles.navigationFilename]}>
-//             <MonoText style={styles.codeHighlightText}>navigation/MainTabNavigator.js</MonoText>
-//           </View>
-//         </View>
-//       </View>
-//     );
-//   }
-
-//   _maybeRenderDevelopmentModeWarning() {
-//     if (__DEV__) {
-//       const learnMoreButton = (
-//         <Text onPress={this._handleLearnMorePress} style={styles.helpLinkText}>
-//           Learn more
-//         </Text>
-//       );
-
-//       return (
-//         <Text style={styles.developmentModeText}>
-//           Development mode is enabled, your app will be slower but you can use useful development
-//           tools. {learnMoreButton}
-//         </Text>
-//       );
-//     } else {
-//       return (
-//         <Text style={styles.developmentModeText}>
-//           You are not in development mode, your app will run at full speed.
-//         </Text>
-//       );
-//     }
-//   }
-
-//   _handleLearnMorePress = () => {
-//     WebBrowser.openBrowserAsync('https://docs.expo.io/versions/latest/guides/development-mode');
-//   };
-
-//   _handleHelpPress = () => {
-//     WebBrowser.openBrowserAsync(
-//       'https://docs.expo.io/versions/latest/guides/up-and-running.html#can-t-see-your-changes'
-//     );
-//   };
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: '#fff',
-//   },
-//   developmentModeText: {
-//     marginBottom: 20,
-//     color: 'rgba(0,0,0,0.4)',
-//     fontSize: 14,
-//     lineHeight: 19,
-//     textAlign: 'center',
-//   },
-//   contentContainer: {
-//     paddingTop: 30,
-//   },
-//   welcomeContainer: {
-//     alignItems: 'center',
-//     marginTop: 10,
-//     marginBottom: 20,
-//   },
-//   welcomeImage: {
-//     width: 100,
-//     height: 80,
-//     resizeMode: 'contain',
-//     marginTop: 3,
-//     marginLeft: -10,
-//   },
-//   getStartedContainer: {
-//     alignItems: 'center',
-//     marginHorizontal: 50,
-//   },
-//   homeScreenFilename: {
-//     marginVertical: 7,
-//   },
-//   codeHighlightText: {
-//     color: 'rgba(96,100,109, 0.8)',
-//   },
-//   codeHighlightContainer: {
-//     backgroundColor: 'rgba(0,0,0,0.05)',
-//     borderRadius: 3,
-//     paddingHorizontal: 4,
-//   },
-//   getStartedText: {
-//     fontSize: 17,
-//     color: 'rgba(96,100,109, 1)',
-//     lineHeight: 24,
-//     textAlign: 'center',
-//   },
-//   tabBarInfoContainer: {
-//     position: 'absolute',
-//     bottom: 0,
-//     left: 0,
-//     right: 0,
-//     ...Platform.select({
-//       ios: {
-//         shadowColor: 'black',
-//         shadowOffset: { height: -3 },
-//         shadowOpacity: 0.1,
-//         shadowRadius: 3,
-//       },
-//       android: {
-//         elevation: 20,
-//       },
-//     }),
-//     alignItems: 'center',
-//     backgroundColor: '#fbfbfb',
-//     paddingVertical: 20,
-//   },
-//   tabBarInfoText: {
-//     fontSize: 17,
-//     color: 'rgba(96,100,109, 1)',
-//     textAlign: 'center',
-//   },
-//   navigationFilename: {
-//     marginTop: 5,
-//   },
-//   helpContainer: {
-//     marginTop: 15,
-//     alignItems: 'center',
-//   },
-//   helpLink: {
-//     paddingVertical: 15,
-//   },
-//   helpLinkText: {
-//     fontSize: 14,
-//     color: '#2e78b7',
-//   },
-// });
-
 import React, {Component} from 'react';
 import {
   Alert,
-  Linking,
+  Platform,
   Dimensions,
   LayoutAnimation,
   Text,
   View,
   StatusBar,
   StyleSheet,
-  TouchableOpacity,
   Image,
+  Button,
 } from 'react-native';
 import {BarCodeScanner, Permissions} from 'expo';
+import {Ionicons} from '@expo/vector-icons';
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
@@ -208,40 +20,128 @@ export default class HomeScreen extends Component {
   };
   state = {
     hasCameraPermission: null,
-    lastScannedUrl: null,
+    scannedTableId: null,
+    isLoading: null,
+    menu: null,
+    franchise: null,
+    error: null,
   };
 
   componentDidMount() {
-    this._requestCameraPermission();
+    this.requestCameraPermission();
   }
 
-  _requestCameraPermission = async () => {
+  requestCameraPermission = async () => {
     const {status} = await Permissions.askAsync(Permissions.CAMERA);
     this.setState({
       hasCameraPermission: status === 'granted',
     });
   };
 
-  _handleBarCodeRead = result => {
-    if (result.data !== this.state.lastScannedUrl) {
+  expireError = () =>
+    setTimeout(() => {
+      this.setState({error: null});
+    }, 3000);
+
+  handleBarCodeRead = result => {
+    const {scannedTableId, isLoading} = this.state;
+    const tableId = result.data.substring(7, result.data.length);
+
+    if (!isLoading) {
       LayoutAnimation.spring();
-      console.log({result});
-      this.setState({
-        lastScannedUrl: result.data.substring(7, result.data.length),
-      });
+      this.setState(
+        {
+          isLoading: true,
+          scannedTableId: tableId,
+        },
+        this.fetchTableInfo
+      );
     }
   };
 
+  fetchTableInfo = () => {
+    const {scannedTableId, isTaken} = this.state;
+    return fetch(
+      `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/currentBill`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        if (responseJson.error) throw responseJson.error;
+
+        // There is already a currentBill in that table
+        if (Object.keys(responseJson).length !== 0)
+          throw {
+            message:
+              'This table appears to be taken. Please contact your waiter',
+          };
+        return scannedTableId;
+      })
+      .then(() => this.fetchRestaurant())
+      .then(() => this.fetchMenu())
+      .then(() => this.setState({isLoading: false, error: null}))
+      .catch(error => {
+        this.setState(
+          {
+            error: error,
+            isLoading: false,
+          },
+          this.expireError
+        );
+      });
+  };
+
+  fetchRestaurant = () => {
+    const {scannedTableId} = this.state;
+    return fetch(
+      `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/franchise`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        this.setState({
+          franchise: responseJson,
+        });
+      });
+  };
+
+  fetchMenu = () => {
+    const {scannedTableId} = this.state;
+    return fetch(
+      `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/menu`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        //console.log({responseJson});
+        this.setState({
+          menu: responseJson,
+        });
+      });
+  };
+
+  goToMenu = () => {
+    const {navigate} = this.props.navigation;
+    navigate('Menu', {menu: this.state.menu});
+  };
+
   render() {
+    const {isLoading, hasCameraPermission, franchise, error} = this.state;
+    const {containerPrincipal, cameraImage} = styles;
+
+    if (isLoading === true) return <LoadingScreen />;
+    if (error !== null) return <ErrorScreen error={error} />;
+    if (franchise !== null)
+      return (
+        <SuccessScreen franchise={franchise} navFunction={this.goToMenu} />
+      );
+
     return (
-      <View style={styles.container}>
-        {this.state.hasCameraPermission === null ? (
+      <View style={containerPrincipal}>
+        {hasCameraPermission === null ? (
           <Text>Requesting for camera permission</Text>
-        ) : this.state.hasCameraPermission === false ? (
+        ) : hasCameraPermission === false ? (
           <Text style={{color: '#fff'}}>Camera permission is not granted</Text>
         ) : (
           <BarCodeScanner
-            onBarCodeRead={this._handleBarCodeRead}
+            onBarCodeRead={this.handleBarCodeRead}
             style={{
               height: Dimensions.get('window').height,
               width: Dimensions.get('window').width,
@@ -249,96 +149,157 @@ export default class HomeScreen extends Component {
           >
             <Image
               source={require('../assets/images/scan-splash.png')}
-              style={styles.cameraImage}
+              style={cameraImage}
             />
           </BarCodeScanner>
         )}
-
-        {this._maybeRenderUrl()}
 
         <StatusBar hidden />
       </View>
     );
   }
-
-  _handlePressUrl = () => {
-    Alert.alert(
-      'Open this URL?',
-      this.state.lastScannedUrl,
-      [
-        {
-          text: 'Yes',
-          onPress: () => Linking.openURL(this.state.lastScannedUrl),
-        },
-        {text: 'No', onPress: () => {}},
-      ],
-      {cancellable: false}
-    );
-  };
-
-  _handlePressCancel = () => {
-    this.setState({lastScannedUrl: null});
-  };
-
-  _maybeRenderUrl = () => {
-    if (!this.state.lastScannedUrl) {
-      return;
-    }
-
-    return (
-      <View style={styles.bottomBar}>
-        <TouchableOpacity style={styles.url} onPress={this._handlePressUrl}>
-          <Text numberOfLines={1} style={styles.urlText}>
-            {this.state.lastScannedUrl}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.cancelButton}
-          onPress={this._handlePressCancel}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  };
 }
 
+const LoadingScreen = () => {
+  const {
+    container,
+    welcomeContainer,
+    loadingImage,
+    getStartedContainer,
+    getStartedText,
+  } = styles;
+  return (
+    <View style={container}>
+      <View style={welcomeContainer}>
+        <Image
+          source={require('../assets/images/loading.gif')}
+          style={loadingImage}
+        />
+      </View>
+
+      <View style={getStartedContainer}>
+        <Text style={getStartedText}>Loading...</Text>
+      </View>
+
+      <StatusBar hidden />
+    </View>
+  );
+};
+
+const ErrorScreen = ({error}) => {
+  const {container, welcomeContainer, getStartedContainer, errorText} = styles;
+  return (
+    <View style={container}>
+      <View style={welcomeContainer}>
+        <Ionicons
+          name={Platform.OS === 'ios' ? `ios-close-circle` : 'md-close-circle'}
+          size={150}
+          color="red"
+        />
+      </View>
+
+      <View style={getStartedContainer}>
+        <Text style={errorText}>{error.message}</Text>
+      </View>
+      <StatusBar hidden />
+    </View>
+  );
+};
+
+const SuccessScreen = ({franchise, navFunction}) => {
+  const {
+    container,
+    welcomeContainer,
+    getStartedContainer,
+    getStartedText,
+    buttonMenu,
+  } = styles;
+  setTimeout(() => {
+    navFunction();
+  }, 1000);
+  return (
+    <View style={container}>
+      <View style={welcomeContainer}>
+        <Ionicons
+          name={
+            Platform.OS === 'ios'
+              ? `ios-checkmark-circle`
+              : 'md-checkmark-circle'
+          }
+          size={150}
+          color="green"
+        />
+      </View>
+      <View style={getStartedContainer}>
+        <Text style={getStartedText}>{franchise.name}</Text>
+      </View>
+      <Button
+        onPress={navFunction}
+        title="Go to Menu"
+        accessibilityLabel="Go to Menu"
+        style={buttonMenu}
+      />
+      <StatusBar hidden />
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
-  container: {
+  containerPrincipal: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#000',
   },
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 15,
-    flexDirection: 'row',
-  },
-  url: {
+  container: {
     flex: 1,
-  },
-  urlText: {
-    color: '#fff',
-    fontSize: 20,
-  },
-  cancelButton: {
-    marginLeft: 10,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  cancelButtonText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 18,
+    backgroundColor: '#fff',
   },
   cameraImage: {
     position: 'relative',
     flex: 1,
     height: Dimensions.get('window').height,
     width: Dimensions.get('window').width,
+  },
+  welcomeContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  loadingImage: {
+    width: 100,
+    height: 80,
+    resizeMode: 'contain',
+    marginTop: 3,
+    marginLeft: -10,
+  },
+  getStartedContainer: {
+    alignItems: 'center',
+    marginHorizontal: 50,
+  },
+  getStartedText: {
+    fontSize: 25,
+    color: 'rgba(96,100,109, 1)',
+    lineHeight: 24,
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  errorText: {
+    fontSize: 17,
+    color: 'rgba(96,100,109, 1)',
+    lineHeight: 24,
+    textAlign: 'justify',
+  },
+  rightText: {
+    fontSize: 17,
+    color: 'rgba(96,100,109, 1)',
+    lineHeight: 24,
+    textAlign: 'right',
+  },
+  buttonMenu: {
+    backgroundColor: '#fff',
+    color: '#86b0f4',
   },
 });
