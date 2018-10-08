@@ -9,10 +9,10 @@ import {
   StatusBar,
   StyleSheet,
   Image,
-  Button
+  Button,
 } from 'react-native';
 import {BarCodeScanner, Permissions} from 'expo';
-import { Ionicons } from '@expo/vector-icons';
+import {Ionicons} from '@expo/vector-icons';
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
@@ -20,11 +20,11 @@ export default class HomeScreen extends Component {
   };
   state = {
     hasCameraPermission: null,
-    lastTableId: null,
-    isTaken: null,
+    scannedTableId: null,
     isLoading: null,
-    restaurantName: null,
-    dataSource: null
+    menu: null,
+    franchise: null,
+    error: null,
   };
 
   componentDidMount() {
@@ -38,176 +38,211 @@ export default class HomeScreen extends Component {
     });
   };
 
+  expireError = () =>
+    setTimeout(() => {
+      this.setState({error: null});
+    }, 3000);
+
   handleBarCodeRead = result => {
-    const {lastTableId} = this.state
-    const tableId = result.data.substring(7, result.data.length)
-    if (tableId !== lastTableId) {
+    const {scannedTableId, isLoading} = this.state;
+    const tableId = result.data.substring(7, result.data.length);
+
+    if (!isLoading) {
       LayoutAnimation.spring();
-      this.setState({
-        lastTableId: result.data.substring(7, result.data.length),
-        isLoading: true,
-      });
+      this.setState(
+        {
+          isLoading: true,
+          scannedTableId: tableId,
+        },
+        this.fetchTableInfo
+      );
     }
+  };
+
+  fetchTableInfo = () => {
+    const {scannedTableId, isTaken} = this.state;
+    return fetch(
+      `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/currentBill`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        if (responseJson.error) throw responseJson.error;
+
+        // There is already a currentBill in that table
+        if (Object.keys(responseJson).length !== 0)
+          throw {
+            message:
+              'This table appears to be taken. Please contact your waiter',
+          };
+        return scannedTableId;
+      })
+      .then(() => this.fetchRestaurant())
+      .then(() => this.fetchMenu())
+      .then(() => this.setState({isLoading: false, error: null}))
+      .catch(error => {
+        this.setState(
+          {
+            error: error,
+            isLoading: false,
+          },
+          this.expireError
+        );
+      });
+  };
+
+  fetchRestaurant = () => {
+    const {scannedTableId} = this.state;
+    return fetch(
+      `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/franchise`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        this.setState({
+          franchise: responseJson,
+        });
+      });
+  };
+
+  fetchMenu = () => {
+    const {scannedTableId} = this.state;
+    return fetch(
+      `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/menu`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        //console.log({responseJson});
+        this.setState({
+          menu: responseJson,
+        });
+      });
+  };
+
+  goToMenu = () => {
+    const {navigate} = this.props.navigation;
+    navigate('Menu', {menu: this.state.menu});
   };
 
   render() {
-    //Puede funcionar para cuando se haga lo del pedido y que la mesa ya no esta ocupada.
-    // const { navigation } = this.props;
-    // const isLoading = navigation.getParam('isLoading');
-    // const isTaken = navigation.getParam('isTaken');
-    // console.log("loading "+isLoading+" taken " + isTaken)
-    if(this.state.isLoading === null){
+    const {isLoading, hasCameraPermission, franchise, error} = this.state;
+    const {containerPrincipal, cameraImage} = styles;
+
+    if (isLoading === true) return <LoadingScreen />;
+    if (error !== null) return <ErrorScreen error={error} />;
+    if (franchise !== null)
       return (
-        <View style={styles.containerPrincipal}>
-          {this.state.hasCameraPermission === null ? (
-            <Text>Requesting for camera permission</Text>
-          ) : this.state.hasCameraPermission === false ? (
-            <Text style={{color: '#fff'}}>Camera permission is not granted</Text>
-          ) : (
-            <BarCodeScanner
-              onBarCodeRead={this.handleBarCodeRead}
-              style={{
-                height: Dimensions.get('window').height,
-                width: Dimensions.get('window').width,
-              }}
-            >
-              <Image
-                source={require('../assets/images/scan-splash.png')}
-                style={styles.cameraImage}
-              />
-            </BarCodeScanner>
-          )}
-
-          {this.maybeRenderUrl()}
-
-          <StatusBar hidden />
-        </View>
+        <SuccessScreen franchise={franchise} navFunction={this.goToMenu} />
       );
-    }else{
-      if(this.state.isLoading === true){
-        //Loading
-        return (
-          <View style={styles.container}>
-              <View style={styles.welcomeContainer}>
-                <Image
-                  source={require('../assets/images/loading.gif')}
-                  style={styles.loadingImage}
-                />
-              </View>
-    
-              <View style={styles.getStartedContainer}>
-                <Text style={styles.getStartedText}>Loading...</Text>
-              </View>
-              {this.maybeRenderUrl()}
 
-              <StatusBar hidden />
-          </View>
-        );
-      }else{
-        if(this.state.isTaken === true){
-          //Taken
-          return (
-            <View style={styles.container}>
-                <View style={styles.welcomeContainer}>
-                  <Ionicons name={ Platform.OS === 'ios' ? `ios-close-circle` : 'md-close-circle' } size={150} color="red" />
-                </View>
-      
-                <View style={styles.getStartedContainer}>
-                  <Text style={styles.errorText}>This table is taken, plase try another one.{"\n"}Thanks.</Text>
-                  <Text style={styles.rightText}>&nbsp; – {this.state.restaurantName}</Text>
-                </View>
-                {this.maybeRenderUrl()}
-        
-                <StatusBar hidden />
-            </View>
-          );
-        }else{
-          //Welcome
-          return (
-            <View style={styles.container}>
-                <View style={styles.welcomeContainer}>
-                  <Ionicons name={ Platform.OS === 'ios' ? `ios-checkmark-circle` : 'md-checkmark-circle' } size={150} color="green" />
-                </View>
-      
-                <View style={styles.getStartedContainer}>
-                  <Text style={styles.getStartedText}>Welcome to: {"\n"}{this.state.restaurantName}</Text> 
-                </View>
-                {this.maybeRenderUrl()}
+    return (
+      <View style={containerPrincipal}>
+        {hasCameraPermission === null ? (
+          <Text>Requesting for camera permission</Text>
+        ) : hasCameraPermission === false ? (
+          <Text style={{color: '#fff'}}>Camera permission is not granted</Text>
+        ) : (
+          <BarCodeScanner
+            onBarCodeRead={this.handleBarCodeRead}
+            style={{
+              height: Dimensions.get('window').height,
+              width: Dimensions.get('window').width,
+            }}
+          >
+            <Image
+              source={require('../assets/images/scan-splash.png')}
+              style={cameraImage}
+            />
+          </BarCodeScanner>
+        )}
 
-                <Button
-                  onPress={this.gotoMenu}
-                  title="Go to Menu"
-                  accessibilityLabel="Go to Menu"
-                  style={styles.buttonMenu}
-                />
-
-              <StatusBar hidden />
-            </View>
-          );
-        }
-      }
-    }
+        <StatusBar hidden />
+      </View>
+    );
   }
-
-  handleCode = (tableId) => {
-    console.log({tableId})
-    if(this.state.isTaken === null){
-      return fetch(`http://alfred-waiter.herokuapp.com/api/tables/${tableId}/currentBill`)
-        .then((response) => response.json())
-        .then((responseJson) => {
-          console.log(responseJson)
-          // this.setState({
-          //   dataSource: responseJson,
-          // });
-          
-          if(Object.keys(responseJson).length !== 0){
-            this.setState({
-              isTaken: true,
-              isLoading: false,
-            })
-          }else{
-            this.setState({
-              isTaken: false,
-              isLoading: false,
-            })
-          }
-          console.log('taken '+this.state.isTaken)
-          console.log('loading '+this.state.isLoading)
-            // hacer el otro fetch 
-            // .then(menu => navegar a la otra vista)
-          fetch(`http://alfred-waiter.herokuapp.com/api/tables/${tableId}/franchise`)
-          .then((response) => response.json())
-          .then((responseJson) => {
-            console.log(responseJson)
-            this.setState({
-              restaurantName: responseJson.name,
-            });
-            console.log('restaurant '+this.state.restaurantName)
-          })
-          .catch((error) =>{
-            console.error(error);
-          });
-        })
-        .catch((error) =>{
-          console.error(error);
-        });
-    }
-  };
-
-  maybeRenderUrl = () => {
-    if (!this.state.lastTableId) {
-      return;
-    }
-
-    console.log(this.state.lastTableId)
-    this.handleCode(this.state.lastTableId)
-  };
-
-  gotoMenu = () => {
-    const {navigate} = this.props.navigation
-    navigate('Menu', {tableId: this.state.lastTableId})
-  };
 }
+
+const LoadingScreen = () => {
+  const {
+    container,
+    welcomeContainer,
+    loadingImage,
+    getStartedContainer,
+    getStartedText,
+  } = styles;
+  return (
+    <View style={container}>
+      <View style={welcomeContainer}>
+        <Image
+          source={require('../assets/images/loading.gif')}
+          style={loadingImage}
+        />
+      </View>
+
+      <View style={getStartedContainer}>
+        <Text style={getStartedText}>Loading...</Text>
+      </View>
+
+      <StatusBar hidden />
+    </View>
+  );
+};
+
+const ErrorScreen = ({error}) => {
+  const {container, welcomeContainer, getStartedContainer, errorText} = styles;
+  return (
+    <View style={container}>
+      <View style={welcomeContainer}>
+        <Ionicons
+          name={Platform.OS === 'ios' ? `ios-close-circle` : 'md-close-circle'}
+          size={150}
+          color="red"
+        />
+      </View>
+
+      <View style={getStartedContainer}>
+        <Text style={errorText}>{error.message}</Text>
+      </View>
+      <StatusBar hidden />
+    </View>
+  );
+};
+
+const SuccessScreen = ({franchise, navFunction}) => {
+  const {
+    container,
+    welcomeContainer,
+    getStartedContainer,
+    getStartedText,
+    buttonMenu,
+  } = styles;
+  setTimeout(() => {
+    navFunction();
+  }, 1000);
+  return (
+    <View style={container}>
+      <View style={welcomeContainer}>
+        <Ionicons
+          name={
+            Platform.OS === 'ios'
+              ? `ios-checkmark-circle`
+              : 'md-checkmark-circle'
+          }
+          size={150}
+          color="green"
+        />
+      </View>
+      <View style={getStartedContainer}>
+        <Text style={getStartedText}>{franchise.name}</Text>
+      </View>
+      <Button
+        onPress={navFunction}
+        title="Go to Menu"
+        accessibilityLabel="Go to Menu"
+        style={buttonMenu}
+      />
+      <StatusBar hidden />
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   containerPrincipal: {
@@ -264,7 +299,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   buttonMenu: {
-    backgroundColor: "#fff",
-    color: "#86b0f4",
+    backgroundColor: '#fff',
+    color: '#86b0f4',
   },
 });
