@@ -9,10 +9,10 @@ import {
   StatusBar,
   StyleSheet,
   Image,
-  Button
-} from 'react-native'
-import { BarCodeScanner, Permissions } from 'expo'
-import { Ionicons } from '@expo/vector-icons'
+  TouchableOpacity,
+} from 'react-native';
+import {BarCodeScanner, Permissions} from 'expo';
+import {Ionicons} from '@expo/vector-icons';
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
@@ -234,12 +234,13 @@ const SuccessScreen = ({ franchise, navFunction }) => {
       <View style={splashTextContainer}>
         <Text style={splashText}>{franchise.name}</Text>
       </View>
-      <Button
+      <TouchableOpacity
+        style={styles.buttonMenu}
         onPress={navFunction}
-        title="Go to Menu"
         accessibilityLabel="Go to Menu"
-        style={buttonMenu}
-      />
+      >
+        <Text style={styles.textMenuButton}> Go to Menu </Text>
+      </TouchableOpacity>
       <StatusBar hidden />
     </View>
   )
@@ -300,7 +301,14 @@ const styles = StyleSheet.create({
     textAlign: 'right'
   },
   buttonMenu: {
+    alignItems: 'center',
     backgroundColor: '#fff',
-    color: '#86b0f4'
-  }
-})
+    marginTop: 20,
+  },
+  textMenuButton: {
+    color: '#007aff',
+    fontSize: 20,
+    lineHeight: 20,
+    fontStyle: 'italic'
+  },
+});

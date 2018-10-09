@@ -207,12 +207,13 @@ const UndefinedMenu = ({ navFunction }) => {
       <View style={splashTextContainer}>
         <Text style={errorText}>You must scan a QR code first.</Text>
       </View>
-      <Button
+      <TouchableOpacity
+        style={styles.buttonMenu}
         onPress={navFunction}
-        title="Go to Home"
         accessibilityLabel="Go to Home"
-        style={buttonMenu}
-      />
+      >
+        <Text style={styles.textMenuButton}> Go to Home </Text>
+      </TouchableOpacity>
       <StatusBar hidden />
     </View>
   )
@@ -241,8 +242,15 @@ const styles = StyleSheet.create({
     textAlign: 'justify'
   },
   buttonMenu: {
+    alignItems: 'center',
     backgroundColor: '#fff',
-    color: '#86b0f4'
+    marginTop: 20,
+  },
+  textMenuButton: {
+    color: '#007aff',
+    fontSize: 20,
+    lineHeight: 20,
+    fontStyle: 'italic'
   },
   foodGrid: {
     flex: 1,
