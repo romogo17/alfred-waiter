@@ -190,7 +190,8 @@ const UndefinedMenu = ({ navFunction }) => {
     splashContainer,
     splashTextContainer,
     errorText,
-    buttonMenu
+    buttonMenu,
+    textMenuButton
   } = styles
   setTimeout(() => {
     navFunction()
@@ -208,11 +209,11 @@ const UndefinedMenu = ({ navFunction }) => {
         <Text style={errorText}>You must scan a QR code first.</Text>
       </View>
       <TouchableOpacity
-        style={styles.buttonMenu}
+        style={buttonMenu}
         onPress={navFunction}
         accessibilityLabel="Go to Home"
       >
-        <Text style={styles.textMenuButton}> Go to Home </Text>
+        <Text style={textMenuButton}> Go to Home </Text>
       </TouchableOpacity>
       <StatusBar hidden />
     </View>
@@ -244,7 +245,7 @@ const styles = StyleSheet.create({
   buttonMenu: {
     alignItems: 'center',
     backgroundColor: '#fff',
-    marginTop: 20,
+    marginTop: 20
   },
   textMenuButton: {
     color: '#007aff',

@@ -9,10 +9,10 @@ import {
   StatusBar,
   StyleSheet,
   Image,
-  TouchableOpacity,
-} from 'react-native';
-import {BarCodeScanner, Permissions} from 'expo';
-import {Ionicons} from '@expo/vector-icons';
+  TouchableOpacity
+} from 'react-native'
+import { BarCodeScanner, Permissions } from 'expo'
+import { Ionicons } from '@expo/vector-icons'
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
@@ -130,7 +130,9 @@ export default class HomeScreen extends Component {
 
     if (isLoading === true) return <LoadingScreen />
     if (error !== null) return <ErrorScreen error={error} />
-    if (franchise !== null) { return <SuccessScreen franchise={franchise} navFunction={this.goToMenu} /> }
+    if (franchise !== null) {
+      return <SuccessScreen franchise={franchise} navFunction={this.goToMenu} />
+    }
 
     return (
       <View style={containerPrincipal}>
@@ -213,7 +215,8 @@ const SuccessScreen = ({ franchise, navFunction }) => {
     splashContainer,
     splashTextContainer,
     splashText,
-    buttonMenu
+    buttonMenu,
+    textMenuButton
   } = styles
   setTimeout(() => {
     navFunction()
@@ -235,11 +238,11 @@ const SuccessScreen = ({ franchise, navFunction }) => {
         <Text style={splashText}>{franchise.name}</Text>
       </View>
       <TouchableOpacity
-        style={styles.buttonMenu}
+        style={buttonMenu}
         onPress={navFunction}
         accessibilityLabel="Go to Menu"
       >
-        <Text style={styles.textMenuButton}> Go to Menu </Text>
+        <Text style={textMenuButton}> Go to Menu </Text>
       </TouchableOpacity>
       <StatusBar hidden />
     </View>
@@ -303,12 +306,12 @@ const styles = StyleSheet.create({
   buttonMenu: {
     alignItems: 'center',
     backgroundColor: '#fff',
-    marginTop: 20,
+    marginTop: 20
   },
   textMenuButton: {
     color: '#007aff',
     fontSize: 20,
     lineHeight: 20,
     fontStyle: 'italic'
-  },
-});
+  }
+})
