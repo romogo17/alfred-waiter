@@ -54,9 +54,16 @@ export default class MenuScreen extends React.Component {
   };
 
   renderMenuItem = ({item: {amount, item}, index}) => {
-    const {foodItem, foodImage, foodItemInfo, foodTitle, foodTag} = styles;
+    const {
+      foodItem,
+      foodImage,
+      foodItemInfo,
+      foodTitle,
+      foodTag,
+      activeItem,
+    } = styles;
     return (
-      <View style={foodItem}>
+      <View style={[foodItem, amount !== 0 && activeItem]}>
         <Image
           style={foodImage}
           source={{
@@ -101,7 +108,7 @@ export default class MenuScreen extends React.Component {
           <TouchableOpacity
             onPress={() => this.handleQuantityChange(index, ItemAction.PLUS)}
           >
-            <EvilIcons name="plus" color="#8282A8" size={30} />
+            <Ionicons name="ios-add-circle" color="#8282A8" size={30} />
           </TouchableOpacity>
           <View>
             <Text style={{padding: 5, color: '#555'}}>{amount}</Text>
@@ -109,7 +116,7 @@ export default class MenuScreen extends React.Component {
           <TouchableOpacity
             onPress={() => this.handleQuantityChange(index, ItemAction.MINUS)}
           >
-            <EvilIcons name="minus" color="#8282A8" size={30} />
+            <Ionicons name="ios-remove-circle" color="#8282A8" size={30} />
           </TouchableOpacity>
         </View>
       </View>
@@ -196,9 +203,7 @@ const UndefinedMenu = ({navFunction}) => {
         />
       </View>
       <View style={splashTextContainer}>
-        <Text style={errorText}>
-          Undefined menu. Please Scan a QR code first.
-        </Text>
+        <Text style={errorText}>You must scan a QR code first.</Text>
       </View>
       <Button
         onPress={navFunction}
@@ -253,6 +258,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     justifyContent: 'space-between',
     alignContent: 'flex-start',
+  },
+  activeItem: {
+    // transition: '0.3s ease all',
+    borderLeftColor: '#FFDC48',
+    borderLeftWidth: 6,
   },
   foodItemInfo: {
     flex: 5,
