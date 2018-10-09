@@ -3,7 +3,7 @@ import {
   ScrollView,
   StyleSheet,
   Image,
-  FlatList,
+  SectionList,
   Text,
   View,
   TouchableOpacity,
@@ -24,9 +24,9 @@ export default class MenuScreen extends React.Component {
   // with each item ordered an amount of 0 times
   state = {
     order: this.props.navigation.getParam('menu')
-      ? this.props.navigation.getParam('menu').items.map(item => ({
-        amount: 0,
-        item
+      ? this.props.navigation.getParam('menu').data.map(section => ({
+        ...section,
+        data: section.data.map(item => ({ amount: 0, item }))
       }))
       : null,
     observations: '',
@@ -45,16 +45,20 @@ export default class MenuScreen extends React.Component {
     }
   }
 
-  handleQuantityChange = (index, action) => {
+  handleQuantityChange = (index, section, action) => {
     const { menu, order } = this.state
 
-    if (action === ItemAction.PLUS) order[index].amount += 1
-    else if (order[index].amount > 0) order[index].amount--
+    const sectionIndex = order.findIndex(s => s.title === section.title)
+
+    if (action === ItemAction.PLUS) order[sectionIndex].data[index].amount++
+    else if (order[sectionIndex].data[index].amount > 0) {
+      order[sectionIndex].data[index].amount--
+    }
 
     this.setState({ order: order })
   }
 
-  renderMenuItem = ({ item: { amount, item }, index }) => {
+  renderMenuItem = ({ item: { amount, item }, index, section }) => {
     const {
       foodItem,
       foodImage,
@@ -107,7 +111,9 @@ export default class MenuScreen extends React.Component {
           }}
         >
           <TouchableOpacity
-            onPress={() => this.handleQuantityChange(index, ItemAction.PLUS)}
+            onPress={() =>
+              this.handleQuantityChange(index, section, ItemAction.PLUS)
+            }
           >
             <Ionicons name="ios-add-circle" color="#8282A8" size={30} />
           </TouchableOpacity>
@@ -115,7 +121,9 @@ export default class MenuScreen extends React.Component {
             <Text style={{ padding: 5, color: '#555' }}>{amount}</Text>
           </View>
           <TouchableOpacity
-            onPress={() => this.handleQuantityChange(index, ItemAction.MINUS)}
+            onPress={() =>
+              this.handleQuantityChange(index, section, ItemAction.MINUS)
+            }
           >
             <Ionicons name="ios-remove-circle" color="#8282A8" size={30} />
           </TouchableOpacity>
@@ -130,6 +138,10 @@ export default class MenuScreen extends React.Component {
     navigate('Home', {})
   }
 
+  renderSectionHeader = ({ section }) => {
+    return <SectionHeader title={section.title} />
+  }
+
   render () {
     const { menu, order } = this.state
     const { foodGrid, buttonPlaceOrder } = styles
@@ -141,15 +153,17 @@ export default class MenuScreen extends React.Component {
     return (
       <View style={{ backgroundColor: '#fff', height: '100%' }}>
         <ScrollView style={foodGrid}>
-          <FlatList
-            data={order} // Use the order instead of the menu for easier access to the amount
+          <SectionList
+            sections={order} // Use the order instead of the menu for easier access to the amount
             keyExtractor={({ amount, item }, index) =>
               index + item.name.toPascalCase()
             }
             extraData={this.state}
             renderItem={this.renderMenuItem}
+            renderSectionHeader={this.renderSectionHeader}
           />
         </ScrollView>
+
         <Ripple
           rippleColor={'#rgba(255,255,255,0.8)'}
           rippleContainerBorderRadius={20}
@@ -159,10 +173,15 @@ export default class MenuScreen extends React.Component {
               'Your order',
               order
                 .map(
-                  x =>
-                    `${x.amount} x ${x.item.name} (${x.item.currency} ${
-                      x.item.price
-                    })`
+                  section =>
+                    `${section.title.toUpperCase()}: ${section.data
+                      .map(
+                        x =>
+                          `${x.amount} x ${x.item.name} (${x.item.currency} ${
+                            x.item.price
+                          })`
+                      )
+                      .join(', ')}`
                 )
                 .join('; ')
             )
@@ -182,6 +201,15 @@ export default class MenuScreen extends React.Component {
       </View>
     )
   }
+}
+
+const SectionHeader = ({ title }) => {
+  const { sectionHeaderContainer, sectionHeaderText } = styles
+  return (
+    <View style={sectionHeaderContainer}>
+      <Text style={sectionHeaderText}>{title}</Text>
+    </View>
+  )
 }
 
 const UndefinedMenu = ({ navFunction }) => {
@@ -221,6 +249,17 @@ const UndefinedMenu = ({ navFunction }) => {
 }
 
 const styles = StyleSheet.create({
+  sectionHeaderContainer: {
+    backgroundColor: '#fbfbfb',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#ededed'
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    color: '#8282A8'
+  },
   container: {
     flex: 1,
     alignItems: 'center',

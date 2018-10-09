@@ -81,6 +81,7 @@ export default class HomeScreen extends Component {
       .then(() => this.fetchMenu())
       .then(() => this.setState({ isLoading: false, error: null }))
       .catch(error => {
+        console.log(error)
         this.setState(
           {
             error: error,
