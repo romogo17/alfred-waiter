@@ -1,19 +1,22 @@
-import React from 'react';
-import {Platform} from 'react-native';
-import {createStackNavigator, createBottomTabNavigator} from 'react-navigation';
+import React from 'react'
+import { Platform } from 'react-native'
+import {
+  createStackNavigator,
+  createBottomTabNavigator
+} from 'react-navigation'
 
-import TabBarIcon from '../components/TabBarIcon';
-import HomeScreen from '../screens/HomeScreen';
-import MenuScreen from '../screens/MenuScreen';
-import SettingsScreen from '../screens/SettingsScreen';
+import TabBarIcon from '../components/TabBarIcon'
+import HomeScreen from '../screens/HomeScreen'
+import MenuScreen from '../screens/MenuScreen'
+import SettingsScreen from '../screens/SettingsScreen'
 
 const HomeStack = createStackNavigator({
-  Home: HomeScreen,
-});
+  Home: HomeScreen
+})
 
 HomeStack.navigationOptions = {
   tabBarLabel: 'Home',
-  tabBarIcon: ({focused}) => (
+  tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
       name={
@@ -22,16 +25,16 @@ HomeStack.navigationOptions = {
           : 'md-qr-scanner'
       }
     />
-  ),
-};
+  )
+}
 
 const MenuStack = createStackNavigator({
-  Menu: MenuScreen,
-});
+  Menu: MenuScreen
+})
 
 MenuStack.navigationOptions = {
   tabBarLabel: 'Menu',
-  tabBarIcon: ({focused}) => (
+  tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
       name={
@@ -40,16 +43,16 @@ MenuStack.navigationOptions = {
           : 'md-book'
       }
     />
-  ),
-};
+  )
+}
 
 const SettingsStack = createStackNavigator({
-  Settings: SettingsScreen,
-});
+  Settings: SettingsScreen
+})
 
 SettingsStack.navigationOptions = {
   tabBarLabel: 'Settings',
-  tabBarIcon: ({focused}) => (
+  tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
       name={
@@ -58,11 +61,11 @@ SettingsStack.navigationOptions = {
           : 'md-options'
       }
     />
-  ),
-};
+  )
+}
 
 export default createBottomTabNavigator({
   HomeStack,
   MenuStack,
-  SettingsStack,
-});
+  SettingsStack
+})

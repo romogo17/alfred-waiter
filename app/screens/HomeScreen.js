@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, { Component } from 'react'
 import {
   Alert,
   Platform,
@@ -9,143 +9,143 @@ import {
   StatusBar,
   StyleSheet,
   Image,
-  Button,
-} from 'react-native';
-import {BarCodeScanner, Permissions} from 'expo';
-import {Ionicons} from '@expo/vector-icons';
+  Button
+} from 'react-native'
+import { BarCodeScanner, Permissions } from 'expo'
+import { Ionicons } from '@expo/vector-icons'
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
-    header: null,
-  };
+    header: null
+  }
   state = {
     hasCameraPermission: null,
     scannedTableId: null,
     isLoading: null,
     menu: null,
     franchise: null,
-    error: null,
-  };
+    error: null
+  }
 
-  componentDidMount() {
-    this.requestCameraPermission();
+  componentDidMount () {
+    this.requestCameraPermission()
   }
 
   requestCameraPermission = async () => {
-    const {status} = await Permissions.askAsync(Permissions.CAMERA);
+    const { status } = await Permissions.askAsync(Permissions.CAMERA)
     this.setState({
-      hasCameraPermission: status === 'granted',
-    });
-  };
+      hasCameraPermission: status === 'granted'
+    })
+  }
 
   expireError = () =>
     setTimeout(() => {
-      this.setState({error: null});
-    }, 3000);
+      this.setState({ error: null })
+    }, 3000)
 
   handleBarCodeRead = result => {
-    const {scannedTableId, isLoading} = this.state;
-    const tableId = result.data.substring(7, result.data.length);
+    const { scannedTableId, isLoading } = this.state
+    const tableId = result.data.substring(7, result.data.length)
 
     if (!isLoading) {
-      LayoutAnimation.spring();
+      LayoutAnimation.spring()
       this.setState(
         {
           isLoading: true,
-          scannedTableId: tableId,
+          scannedTableId: tableId
         },
         this.fetchTableInfo
-      );
+      )
     }
-  };
+  }
 
   fetchTableInfo = () => {
-    const {scannedTableId, isTaken} = this.state;
+    const { scannedTableId, isTaken } = this.state
     return fetch(
       `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/currentBill`
     )
       .then(response => response.json())
       .then(responseJson => {
-        if (responseJson.error) throw responseJson.error;
+        if (responseJson.error) throw responseJson.error
 
         // There is already a currentBill in that table
-        if (Object.keys(responseJson).length !== 0)
+        if (Object.keys(responseJson).length !== 0) {
           throw {
             message:
-              'This table appears to be taken. Please contact your waiter',
-          };
-        return scannedTableId;
+              'This table appears to be taken. Please contact your waiter'
+          }
+        }
+        return scannedTableId
       })
       .then(() => this.fetchRestaurant())
       .then(() => this.fetchMenu())
-      .then(() => this.setState({isLoading: false, error: null}))
+      .then(() => this.setState({ isLoading: false, error: null }))
       .catch(error => {
         this.setState(
           {
             error: error,
-            isLoading: false,
+            isLoading: false
           },
           this.expireError
-        );
-      });
-  };
+        )
+      })
+  }
 
   fetchRestaurant = () => {
-    const {scannedTableId} = this.state;
+    const { scannedTableId } = this.state
     return fetch(
       `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/franchise`
     )
       .then(response => response.json())
       .then(responseJson => {
         this.setState({
-          franchise: responseJson,
-        });
-      });
-  };
+          franchise: responseJson
+        })
+      })
+  }
 
   fetchMenu = () => {
-    const {scannedTableId} = this.state;
+    const { scannedTableId } = this.state
     return fetch(
       `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/menu`
     )
       .then(response => response.json())
       .then(responseJson => {
-        //console.log({responseJson});
+        // console.log({responseJson});
         this.setState({
-          menu: responseJson,
-        });
-      });
-  };
+          menu: responseJson
+        })
+      })
+  }
 
   goToMenu = () => {
-    const {navigate} = this.props.navigation;
-    const {menu, franchise} = this.state;
-    navigate('Menu', {menu: menu, franchise});
-  };
+    const { navigate } = this.props.navigation
+    const { menu, franchise } = this.state
+    navigate('Menu', { menu: menu, franchise })
+  }
 
-  render() {
-    const {isLoading, hasCameraPermission, franchise, error} = this.state;
-    const {containerPrincipal, cameraImage} = styles;
+  render () {
+    const { isLoading, hasCameraPermission, franchise, error } = this.state
+    const { containerPrincipal, cameraImage } = styles
 
-    if (isLoading === true) return <LoadingScreen />;
-    if (error !== null) return <ErrorScreen error={error} />;
-    if (franchise !== null)
-      return (
-        <SuccessScreen franchise={franchise} navFunction={this.goToMenu} />
-      );
+    if (isLoading === true) return <LoadingScreen />
+    if (error !== null) return <ErrorScreen error={error} />
+    if (franchise !== null) { return <SuccessScreen franchise={franchise} navFunction={this.goToMenu} /> }
 
     return (
       <View style={containerPrincipal}>
         {hasCameraPermission === null ? (
           <Text>Requesting for camera permission</Text>
         ) : hasCameraPermission === false ? (
-          <Text style={{color: '#fff'}}>Camera permission is not granted</Text>
+          <Text style={{ color: '#fff' }}>
+            Camera permission is not granted
+          </Text>
         ) : (
           <BarCodeScanner
             onBarCodeRead={this.handleBarCodeRead}
             style={{
               height: Dimensions.get('window').height,
-              width: Dimensions.get('window').width,
+              width: Dimensions.get('window').width
             }}
           >
             <Image
@@ -157,7 +157,7 @@ export default class HomeScreen extends Component {
 
         <StatusBar hidden />
       </View>
-    );
+    )
   }
 }
 
@@ -167,8 +167,8 @@ const LoadingScreen = () => {
     splashContainer,
     loadingImage,
     splashTextContainer,
-    splashText,
-  } = styles;
+    splashText
+  } = styles
   return (
     <View style={container}>
       <View style={splashContainer}>
@@ -184,11 +184,11 @@ const LoadingScreen = () => {
 
       <StatusBar hidden />
     </View>
-  );
-};
+  )
+}
 
-const ErrorScreen = ({error}) => {
-  const {container, splashContainer, splashTextContainer, errorText} = styles;
+const ErrorScreen = ({ error }) => {
+  const { container, splashContainer, splashTextContainer, errorText } = styles
   return (
     <View style={container}>
       <View style={splashContainer}>
@@ -204,20 +204,20 @@ const ErrorScreen = ({error}) => {
       </View>
       <StatusBar hidden />
     </View>
-  );
-};
+  )
+}
 
-const SuccessScreen = ({franchise, navFunction}) => {
+const SuccessScreen = ({ franchise, navFunction }) => {
   const {
     container,
     splashContainer,
     splashTextContainer,
     splashText,
-    buttonMenu,
-  } = styles;
+    buttonMenu
+  } = styles
   setTimeout(() => {
-    navFunction();
-  }, 1000);
+    navFunction()
+  }, 1000)
   return (
     <View style={container}>
       <View style={splashContainer}>
@@ -242,65 +242,65 @@ const SuccessScreen = ({franchise, navFunction}) => {
       />
       <StatusBar hidden />
     </View>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   containerPrincipal: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000',
+    backgroundColor: '#000'
   },
   container: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: '#fff'
   },
   cameraImage: {
     position: 'relative',
     flex: 1,
     height: Dimensions.get('window').height,
-    width: Dimensions.get('window').width,
+    width: Dimensions.get('window').width
   },
   splashContainer: {
     alignItems: 'center',
     marginTop: 10,
-    marginBottom: 20,
+    marginBottom: 20
   },
   loadingImage: {
     width: 100,
     height: 80,
     resizeMode: 'contain',
     marginTop: 3,
-    marginLeft: -10,
+    marginLeft: -10
   },
   splashTextContainer: {
     alignItems: 'center',
-    marginHorizontal: 50,
+    marginHorizontal: 50
   },
   splashText: {
     fontSize: 25,
     color: 'rgba(96,100,109, 1)',
     lineHeight: 24,
     textAlign: 'center',
-    fontStyle: 'italic',
+    fontStyle: 'italic'
   },
   errorText: {
     fontSize: 17,
     color: 'rgba(96,100,109, 1)',
     lineHeight: 24,
-    textAlign: 'justify',
+    textAlign: 'justify'
   },
   rightText: {
     fontSize: 17,
     color: 'rgba(96,100,109, 1)',
     lineHeight: 24,
-    textAlign: 'right',
+    textAlign: 'right'
   },
   buttonMenu: {
     backgroundColor: '#fff',
-    color: '#86b0f4',
-  },
-});
+    color: '#86b0f4'
+  }
+})
