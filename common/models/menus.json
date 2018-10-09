@@ -10,7 +10,7 @@
       "type": "string",
       "required": true
     },
-    "items": {
+    "data": {
       "type": ["object"],
       "required": true
     },
