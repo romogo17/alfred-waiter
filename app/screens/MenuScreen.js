@@ -1,285 +1,163 @@
 import React from 'react';
 import {
   ScrollView,
-  AppRegistry,
   StyleSheet,
-  Intro,
-  Results,
   Image,
   FlatList,
   Text,
   View,
-  TouchableHighlight,
-  Button,
+  TouchableOpacity,
   Platform,
+  Alert,
+  Button,
+  StatusBar,
 } from 'react-native';
-import Ripple from 'react-native-material-ripple'; //Source: https://www.npmjs.com/package/react-native-material-ripple
-var order = {}; //Datos de la orden a realizarse
+import {Ionicons, EvilIcons} from '@expo/vector-icons';
+import Ripple from 'react-native-material-ripple';
 
 export default class MenuScreen extends React.Component {
   static navigationOptions = {
     title: 'Menu',
   };
 
+  // If the menu exists, initialize the order as a copy of the menu
+  // with each item ordered an amount of 0 times
   state = {
-    tableId: null,
-    menuData: null,
+    order: this.props.navigation.getParam('menu')
+      ? this.props.navigation.getParam('menu').items.map(item => ({
+          amount: 0,
+          item,
+        }))
+      : null,
+    observations: '',
+    menu: this.props.navigation.getParam('menu'),
   };
 
-  componentDidMount() {
-    const {navigation} = this.props;
-    const menu = navigation.getParam('menu');
-    console.log(menu);
+  componentDidUpdate() {
+    const {order} = this.state;
+    if (order === null)
+      this.setState({
+        order: this.props.navigation.getParam('menu').items.map(item => ({
+          amount: 0,
+          item,
+        })),
+      });
   }
 
-  _placeOrder = () => {};
-  number = 0;
-  render() {
-    const {navigation} = this.props;
-    const lastTableId = navigation.getParam('tableId');
-    // console.log(lastTableId)
-    // if (lastTableId !== null) {
-    //   {
-    //     this.fetchMenu(lastTableId);
-    //   }
-    // }
+  handleQuantityChange = (index, action) => {
+    const {menu, order} = this.state;
+
+    if (action === ItemAction.PLUS) order[index].amount += 1;
+    else if (order[index].amount > 0) order[index].amount--;
+
+    this.setState({order: order});
+  };
+
+  renderMenuItem = ({item: {amount, item}, index}) => {
+    const {foodItem, foodImage, foodItemInfo, foodTitle, foodTag} = styles;
     return (
-      <View style={{backgroundColor: '#fff', height: '100%'}}>
-        <View
-          style={{
-            backgroundColor: '#5EBA7D',
-            flexDirection: 'row',
-            justifyContent: 'center',
-            alignContent: 'center',
-            alignItems: 'center',
-            height: 55,
+      <View style={foodItem}>
+        <Image
+          style={foodImage}
+          source={{
+            uri: item.imageUri
+              ? item.imageUri
+              : 'https://dummyimage.com/300x300/fff/aaa',
           }}
-        >
-          <View
-            style={{
-              height: '100%',
-              flex: 1,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 20,
-                fontWeight: 'bold',
-                textAlign: 'center',
-              }}
-            >
-              0
-            </Text>
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 9,
-                fontWeight: 'bold',
-                textAlign: 'center',
-              }}
-            >
-              Quantity
+        />
+        <View style={foodItemInfo}>
+          <View>
+            <Text style={foodTitle}>{item.name}</Text>
+          </View>
+          <View style={{marginTop: 5}}>
+            <Text style={styles.foodPrice}>
+              {item.currency + ' ' + item.price}
             </Text>
           </View>
           <View
             style={{
-              height: '100%',
-              flex: 1,
-              alignContent: 'center',
-              justifyContent: 'center',
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              marginTop: 10,
             }}
           >
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 20,
-                fontWeight: 'bold',
-                textAlign: 'center',
-              }}
-            >
-              0 min
-            </Text>
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 9,
-                fontWeight: 'bold',
-                textAlign: 'center',
-              }}
-            >
-              Delivery Time
-            </Text>
-          </View>
-          <View
-            style={{
-              height: '100%',
-              flex: 1,
-              alignContent: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 20,
-                fontWeight: 'bold',
-                textAlign: 'center',
-              }}
-            >
-              ₡ 0
-            </Text>
-            <Text
-              style={{
-                color: '#fff',
-                fontSize: 9,
-                fontWeight: 'bold',
-                textAlign: 'center',
-              }}
-            >
-              Total Price
-            </Text>
+            {item.tags &&
+              item.tags.map(t => (
+                <Text key={t} style={foodTag}>
+                  {t}
+                </Text>
+              ))}
           </View>
         </View>
-        <ScrollView style={styles.food_grid}>
+
+        <View
+          style={{
+            flexDirection: 'column',
+            width: 40,
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+        >
+          <TouchableOpacity
+            onPress={() => this.handleQuantityChange(index, ItemAction.PLUS)}
+          >
+            <EvilIcons name="plus" color="#8282A8" size={30} />
+          </TouchableOpacity>
+          <View>
+            <Text style={{padding: 5, color: '#555'}}>{amount}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => this.handleQuantityChange(index, ItemAction.MINUS)}
+          >
+            <EvilIcons name="minus" color="#8282A8" size={30} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  goToHome = () => {
+    const {navigate} = this.props.navigation;
+    const {menu, franchise} = this.state;
+    navigate('Home', {});
+  };
+
+  render() {
+    const {menu, order} = this.state;
+    const {foodGrid, buttonPlaceOrder} = styles;
+
+    if (this.props.navigation.getParam('menu') === undefined)
+      return <UndefinedMenu navFunction={this.goToHome} />;
+
+    return (
+      <View style={{backgroundColor: '#fff', height: '100%'}}>
+        <ScrollView style={foodGrid}>
           <FlatList
-            data={[
-              {
-                key: 'Salad',
-                price: 1680,
-                currency: '₡',
-                tags: ['a', 'b', 'c', 'd', 'e'],
-                imageUrl:
-                  'https://www.skinnytaste.com/wp-content/uploads/2018/04/Chopped-Salad-with-Shrimp-Blue-Cheese-and-Bacon-1.jpg',
-              },
-              {
-                key: 'Beef',
-                price: 2658,
-                currency: '₡',
-                tags: ['f', 'g'],
-                imageUrl:
-                  'https://hips.hearstapps.com/del.h-cdn.co/assets/17/38/2048x1365/gallery-1506010658-beef-tenderloin-delish.jpg?resize=480:*',
-              },
-              {
-                key: 'Fish',
-                price: 3500,
-                currency: '₡',
-                tags: ['h', 'i'],
-                imageUrl:
-                  'https://www.ndtv.com/cooks/images/KERELA.FISH.66%281%29.jpg?downsize=650:400&output-quality=70&output-format=webp',
-              },
-              {
-                key: 'Pasta',
-                price: 1600,
-                currency: '₡',
-                tags: ['j', 'k'],
-                imageUrl:
-                  'http://superpola.com//site/assets/files/24157/468.jpg',
-              },
-              {
-                key: 'Pizza',
-                price: 8000,
-                currency: '₡',
-                tags: ['l', 'm'],
-                imageUrl:
-                  'https://www.infobae.com/new-resizer/-AU5yITpCjSXYx8cRXI43OAvP1c=/600x0/filters:quality(100)/s3.amazonaws.com/arc-wordpress-client-uploads/infobae-wp/wp-content/uploads/2018/09/08130747/semana-de-la-pizza-1920-5.jpg',
-              },
-            ]}
-            renderItem={({item}) => (
-              <View style={styles.food_item}>
-                <Image
-                  style={styles.food_image}
-                  source={{uri: item.imageUrl}}
-                />
-                <View style={styles.food_item_info}>
-                  <View>
-                    <Text style={styles.food_title}>{item.key}</Text>
-                  </View>
-                  <View style={{flexDirection: 'row', flexWrap: 'wrap'}}>
-                    {item.tags.map(i => {
-                      return (
-                        <Text key={i} style={styles.food_tag}>
-                          {i}
-                        </Text>
-                      );
-                    })}
-                  </View>
-                  <View style={{marginRight: 2, marginTop: 10}}>
-                    <Text style={styles.food_price}>
-                      {item.currency + ' ' + item.price}
-                    </Text>
-                  </View>
-                </View>
-                <View
-                  style={{
-                    flexDirection: 'column',
-                    width: 40,
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <Ripple
-                    rippleColor={'#rgba(255,255,255,0.9)'}
-                    onPress={() => {
-                      this.number++;
-                    }}
-                  >
-                    <Text
-                      style={{
-                        borderRadius: 3,
-                        textAlign: 'center',
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        backgroundColor: '#5EBA7D',
-                        padding: 5,
-                      }}
-                    >
-                      +
-                    </Text>
-                  </Ripple>
-                  <View>
-                    <Text
-                      style={{
-                        borderRadius: 3,
-                        textAlign: 'center',
-                        color: '#999',
-                        fontWeight: 'bold',
-                        backgroundColor: '#e5e5e5',
-                        padding: 5,
-                      }}
-                    >
-                      {this.number}
-                    </Text>
-                  </View>
-                  <Ripple
-                    rippleColor={'#rgba(255,255,255,0.9)'}
-                    onPress={() => {
-                      this.number--;
-                    }}
-                  >
-                    <Text
-                      style={{
-                        borderRadius: 3,
-                        textAlign: 'center',
-                        color: '#fff',
-                        fontWeight: 'bold',
-                        backgroundColor: '#dc3545',
-                        padding: 5,
-                      }}
-                    >
-                      -
-                    </Text>
-                  </Ripple>
-                </View>
-              </View>
-            )}
+            data={order} // Use the order instead of the menu for easier access to the amount
+            keyExtractor={({amount, item}, index) =>
+              index + item.name.toPascalCase()
+            }
+            extraData={this.state}
+            renderItem={this.renderMenuItem}
           />
         </ScrollView>
         <Ripple
           rippleColor={'#rgba(255,255,255,0.8)'}
           rippleContainerBorderRadius={20}
-          style={styles.button_place_order}
+          style={buttonPlaceOrder}
+          onPress={() =>
+            Alert.alert(
+              'Your order',
+              order
+                .map(
+                  x =>
+                    `${x.amount} x ${x.item.name} (${x.item.currency} ${
+                      x.item.price
+                    })`
+                )
+                .join('; ')
+            )
+          }
         >
           <Text
             style={{
@@ -295,38 +173,77 @@ export default class MenuScreen extends React.Component {
       </View>
     );
   }
-
-  fetchMenu = tableId => {
-    // this.setState({
-    //   tableId: tableId
-    // })
-    console.log('table ' + tableId);
-    // if(this.state.menuData !== null){
-    return fetch(
-      `http://alfred-waiter.herokuapp.com/api/tables/${tableId}/menu`
-    )
-      .then(response => response.json())
-      .then(responseJson => {
-        console.log(responseJson);
-        // this.setState({
-        //   menuData: responseJson,
-        // });
-      })
-      .catch(error => {
-        console.error(error);
-      });
-    // }
-  };
 }
 
+const UndefinedMenu = ({navFunction}) => {
+  const {
+    container,
+    splashContainer,
+    splashTextContainer,
+    errorText,
+    buttonMenu,
+  } = styles;
+  setTimeout(() => {
+    navFunction();
+  }, 2000);
+  return (
+    <View style={container}>
+      <View style={splashContainer}>
+        <Ionicons
+          name={Platform.OS === 'ios' ? `ios-close-circle` : 'md-close-circle'}
+          size={150}
+          color="red"
+        />
+      </View>
+      <View style={splashTextContainer}>
+        <Text style={errorText}>
+          Undefined menu. Please Scan a QR code first.
+        </Text>
+      </View>
+      <Button
+        onPress={navFunction}
+        title="Go to Home"
+        accessibilityLabel="Go to Home"
+        style={buttonMenu}
+      />
+      <StatusBar hidden />
+    </View>
+  );
+};
+
 const styles = StyleSheet.create({
-  food_grid: {
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+  },
+  splashContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20,
+  },
+  splashTextContainer: {
+    alignItems: 'center',
+    marginHorizontal: 50,
+  },
+  errorText: {
+    fontSize: 17,
+    color: 'rgba(96,100,109, 1)',
+    lineHeight: 24,
+    textAlign: 'justify',
+  },
+  buttonMenu: {
+    backgroundColor: '#fff',
+    color: '#86b0f4',
+  },
+  foodGrid: {
     flex: 1,
     backgroundColor: '#fff',
     flexDirection: 'column',
     height: '100%',
   },
-  food_item: {
+  foodItem: {
     flex: 1,
     flexDirection: 'row',
     padding: 10,
@@ -337,39 +254,34 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignContent: 'flex-start',
   },
-  food_item_info: {
+  foodItemInfo: {
     flex: 5,
     marginLeft: 8,
     marginRight: 8,
     alignSelf: 'flex-start',
   },
-  food_title: {
+  foodTitle: {
     fontWeight: 'bold',
     fontSize: 20,
     color: '#555',
     marginBottom: 5,
   },
-  food_tag: {
+  foodTag: {
     borderWidth: 1,
     borderRadius: 4,
     backgroundColor: '#fff',
     borderColor: '#bbb',
-    color: '#aaa',
-    padding: 2,
+    color: '#DB4073',
+    padding: 4,
     minWidth: 30,
     textAlign: 'center',
     marginRight: 3,
-    height: 25,
   },
-  food_price: {
+  foodPrice: {
     fontWeight: 'bold',
-    color: '#666',
-    paddingRight: 5,
-    paddingTop: 5,
-    paddingBottom: 5,
-    padding: 5,
+    color: '#8282A8',
   },
-  food_image: {
+  foodImage: {
     width: 100,
     height: 100,
     resizeMode: 'cover',
@@ -380,7 +292,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 2,
   },
-  button_place_order: {
+  buttonPlaceOrder: {
     borderRadius: 20,
     backgroundColor: '#5EBA7D',
     marginRight: 15,
@@ -390,3 +302,16 @@ const styles = StyleSheet.create({
     padding: 10,
   },
 });
+
+String.prototype.toPascalCase = function() {
+  return this.match(/[a-z]+/gi)
+    .map(function(word) {
+      return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase();
+    })
+    .join('');
+};
+
+var ItemAction = {
+  PLUS: 'plus',
+  MINUS: 'minus',
+};

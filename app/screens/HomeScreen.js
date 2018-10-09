@@ -119,7 +119,8 @@ export default class HomeScreen extends Component {
 
   goToMenu = () => {
     const {navigate} = this.props.navigation;
-    navigate('Menu', {menu: this.state.menu});
+    const {menu, franchise} = this.state;
+    navigate('Menu', {menu: menu, franchise});
   };
 
   render() {
@@ -163,22 +164,22 @@ export default class HomeScreen extends Component {
 const LoadingScreen = () => {
   const {
     container,
-    welcomeContainer,
+    splashContainer,
     loadingImage,
-    getStartedContainer,
-    getStartedText,
+    splashTextContainer,
+    splashText,
   } = styles;
   return (
     <View style={container}>
-      <View style={welcomeContainer}>
+      <View style={splashContainer}>
         <Image
           source={require('../assets/images/loading.gif')}
           style={loadingImage}
         />
       </View>
 
-      <View style={getStartedContainer}>
-        <Text style={getStartedText}>Loading...</Text>
+      <View style={splashTextContainer}>
+        <Text style={splashText}>Loading...</Text>
       </View>
 
       <StatusBar hidden />
@@ -187,10 +188,10 @@ const LoadingScreen = () => {
 };
 
 const ErrorScreen = ({error}) => {
-  const {container, welcomeContainer, getStartedContainer, errorText} = styles;
+  const {container, splashContainer, splashTextContainer, errorText} = styles;
   return (
     <View style={container}>
-      <View style={welcomeContainer}>
+      <View style={splashContainer}>
         <Ionicons
           name={Platform.OS === 'ios' ? `ios-close-circle` : 'md-close-circle'}
           size={150}
@@ -198,7 +199,7 @@ const ErrorScreen = ({error}) => {
         />
       </View>
 
-      <View style={getStartedContainer}>
+      <View style={splashTextContainer}>
         <Text style={errorText}>{error.message}</Text>
       </View>
       <StatusBar hidden />
@@ -209,9 +210,9 @@ const ErrorScreen = ({error}) => {
 const SuccessScreen = ({franchise, navFunction}) => {
   const {
     container,
-    welcomeContainer,
-    getStartedContainer,
-    getStartedText,
+    splashContainer,
+    splashTextContainer,
+    splashText,
     buttonMenu,
   } = styles;
   setTimeout(() => {
@@ -219,7 +220,7 @@ const SuccessScreen = ({franchise, navFunction}) => {
   }, 1000);
   return (
     <View style={container}>
-      <View style={welcomeContainer}>
+      <View style={splashContainer}>
         <Ionicons
           name={
             Platform.OS === 'ios'
@@ -230,8 +231,8 @@ const SuccessScreen = ({franchise, navFunction}) => {
           color="green"
         />
       </View>
-      <View style={getStartedContainer}>
-        <Text style={getStartedText}>{franchise.name}</Text>
+      <View style={splashTextContainer}>
+        <Text style={splashText}>{franchise.name}</Text>
       </View>
       <Button
         onPress={navFunction}
@@ -263,7 +264,7 @@ const styles = StyleSheet.create({
     height: Dimensions.get('window').height,
     width: Dimensions.get('window').width,
   },
-  welcomeContainer: {
+  splashContainer: {
     alignItems: 'center',
     marginTop: 10,
     marginBottom: 20,
@@ -275,11 +276,11 @@ const styles = StyleSheet.create({
     marginTop: 3,
     marginLeft: -10,
   },
-  getStartedContainer: {
+  splashTextContainer: {
     alignItems: 'center',
     marginHorizontal: 50,
   },
-  getStartedText: {
+  splashText: {
     fontSize: 25,
     color: 'rgba(96,100,109, 1)',
     lineHeight: 24,
