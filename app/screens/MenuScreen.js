@@ -7,9 +7,10 @@ import {
   Text,
   View,
   TouchableOpacity,
+  TouchableHighlight,
   Platform,
   Alert,
-  Button,
+  Modal,
   StatusBar
 } from 'react-native'
 import { Ionicons, EvilIcons } from '@expo/vector-icons'
@@ -33,7 +34,7 @@ export default class MenuScreen extends React.Component {
     menu: this.props.navigation.getParam('menu')
   }
 
-  componentDidUpdate () {
+  componentDidUpdate() {
     const { order } = this.state
     if (order === null) {
       this.setState({
@@ -74,7 +75,7 @@ export default class MenuScreen extends React.Component {
           source={{
             uri: item.imageUri
               ? item.imageUri
-              : 'https://dummyimage.com/300x300/fff/aaa'
+              : 'https://www.incimages.com/uploaded_files/image/970x450/getty_855098134_353411.jpg'
           }}
         />
         <View style={foodItemInfo}>
@@ -131,7 +132,65 @@ export default class MenuScreen extends React.Component {
       </View>
     )
   }
+  renderOrderItem = ({ item: { amount, item }, index, section }) => {
+    const {
+      foodItem,
+      foodImage,
+      foodItemInfo,
+      foodTitle,
+      foodTag,
+      activeItem
+    } = styles
+    return (
+      <View style={[foodItem, amount !== 0 && activeItem]}>
+        <Image
+          style={styles.foodOrderImage}
+          source={{
+            uri: item.imageUri
+              ? item.imageUri
+              : 'https://www.incimages.com/uploaded_files/image/970x450/getty_855098134_353411.jpg'
+          }}
+        />
+        <View style={foodItemInfo}>
+          <View>
+            <Text style={foodTitle}>{item.name}</Text>
+          </View>
+          <View style={{ marginTop: 5 }}>
+            <Text style={styles.foodPrice}>
+              {item.currency + ' ' + item.price}
+            </Text>
+          </View>
+          <View
+            style={{
+              flexDirection: 'row',
+              flexWrap: 'wrap',
+              marginTop: 10
+            }}
+          >
+            {item.tags &&
+              item.tags.map(t => (
+                <Text key={t} style={foodTag}>
+                  {t}
+                </Text>
+              ))}
+          </View>
+        </View>
 
+        <View
+          style={{
+            flexDirection: 'column',
+            width: 40,
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}
+        >
+          <View>
+            <Text style={{ padding: 5, color: '#555' }}>{amount}</Text>
+          </View>
+        </View>
+      </View>
+    )
+  }
   goToHome = () => {
     const { navigate } = this.props.navigation
     const { menu, franchise } = this.state
@@ -142,9 +201,17 @@ export default class MenuScreen extends React.Component {
     return <SectionHeader title={section.title} />
   }
 
-  render () {
+  orderModalState = {
+    modalVisible: false,
+  };
+
+  setModalVisible(visible) {
+    this.orderModalState.modalVisible = visible;
+  }
+
+  render() {
     const { menu, order } = this.state
-    const { foodGrid, buttonPlaceOrder } = styles
+    const { foodGrid, buttonPlaceOrder, modalContainer } = styles
 
     if (this.props.navigation.getParam('menu') === undefined) {
       return <UndefinedMenu navFunction={this.goToHome} />
@@ -152,6 +219,67 @@ export default class MenuScreen extends React.Component {
 
     return (
       <View style={{ backgroundColor: '#fff', height: '100%' }}>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          isVisible={this.orderModalState.modalVisible}
+          onRequestClose={() => {
+            Alert.alert('Modal has been closed.');
+          }}>
+          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" }}>
+            <View style={modalContainer} >
+              <View style={styles.modalHeader}>
+                <Text style={{ fontSize: 20, color: "#666", marginLeft:5}}>Order summary</Text>
+                <Ripple
+                  rippleColor={'#rgba(255,255,255,0.8)'}
+                  rippleContainerBorderRadius={20}
+                >
+                  <Text style={{ borderRadius: 20, backgroundColor: "#900", color: "#fff", padding: 15, height: 15, width: 15, fontSize: 11 }}>X</Text>
+                </Ripple>
+              </View>
+              <View style={{backgroundColor:"#f5f5f5", padding:10,flexDirection:"row",justifyContent:"space-between"}}>
+                <View style={{flex:1, borderWidth: 1, marginRight: 5, padding: 5, borderRadius: 8,borderColor: "#A5A9FC"}}>
+                  <Text>Taxes: </Text>
+                  <Text>CRC 2000</Text>
+                </View>
+                <View style={{flex:1, borderWidth: 1, marginRight: 5, padding: 5, borderRadius: 8,borderColor: "#A5A9FC"}}>
+                  <Text>Subtotal: </Text>
+                  <Text>CRC 3025</Text>
+                </View>
+                <View style={{flex:1, borderWidth: 1, marginRight: 5, padding: 5, borderRadius: 8,borderColor: "#A5A9FC"}}>
+                  <Text>Total: </Text>
+                  <Text>CRC 5025</Text>
+                </View>
+              </View>
+              <ScrollView style={foodGrid}>
+                <SectionList
+                  sections={order} // Use the order instead of the menu for easier access to the amount
+                  keyExtractor={({ amount, item }, index) =>
+                    index + item.name.toPascalCase()
+                  }
+                  extraData={this.state}
+                  renderItem={this.renderOrderItem}
+                  renderSectionHeader={this.renderSectionHeader}
+                />
+              </ScrollView>
+
+              <Ripple
+                rippleColor={'#rgba(255,255,255,0.8)'}
+                rippleContainerBorderRadius={20}
+                style={styles.buttonPlaceOrder}
+              >
+                <Text style={{
+                  color: '#fff',
+                  fontWeight: 'bold',
+                  fontSize: 20,
+                  textAlign: 'center'
+                }}>Confirm</Text>
+              </Ripple>
+            </View>
+          </View>
+        </Modal>
+
         <ScrollView style={foodGrid}>
           <SectionList
             sections={order} // Use the order instead of the menu for easier access to the amount
@@ -168,8 +296,8 @@ export default class MenuScreen extends React.Component {
           rippleColor={'#rgba(255,255,255,0.8)'}
           rippleContainerBorderRadius={20}
           style={buttonPlaceOrder}
-          onPress={() =>
-            Alert.alert(
+          onPress={() => {
+            /*Alert.alert(
               'Your order',
               order
                 .map(
@@ -178,13 +306,15 @@ export default class MenuScreen extends React.Component {
                       .map(
                         x =>
                           `${x.amount} x ${x.item.name} (${x.item.currency} ${
-                            x.item.price
+                          x.item.price
                           })`
                       )
                       .join(', ')}`
                 )
                 .join('; ')
-            )
+            )*/
+            this.setModalVisible(true)
+          }
           }
         >
           <Text
@@ -352,6 +482,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 2
   },
+  foodOrderImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'cover',
+    borderRadius: 5,
+    flex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2
+  },
   buttonPlaceOrder: {
     borderRadius: 20,
     backgroundColor: '#5EBA7D',
@@ -360,6 +501,23 @@ const styles = StyleSheet.create({
     marginTop: 5,
     marginBottom: 5,
     padding: 10
+  },
+  modalContainer: {
+    width: "95%",
+    height: "80%",
+    borderRadius: 10,
+    backgroundColor: "#fff",
+  },
+  modalHeader: {
+    borderBottomWidth: 1,
+    borderColor: "#e5e5e5",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 10,
+    backgroundColor: "#fff",
+    flexDirection: "row",
+    marginBottom: 10,
+    borderRadius: 20,
   }
 })
 
