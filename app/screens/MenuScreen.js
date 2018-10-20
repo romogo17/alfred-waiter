@@ -160,20 +160,6 @@ export default class MenuScreen extends React.Component {
               {item.currency + ' ' + item.price}
             </Text>
           </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              marginTop: 10
-            }}
-          >
-            {item.tags &&
-              item.tags.map(t => (
-                <Text key={t} style={foodTag}>
-                  {t}
-                </Text>
-              ))}
-          </View>
         </View>
 
         <View
