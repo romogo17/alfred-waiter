@@ -10,9 +10,9 @@ import {
   TouchableHighlight,
   Platform,
   Alert,
-  Modal,
   StatusBar
 } from 'react-native'
+import Modal from 'react-native-modal'
 import { Ionicons, EvilIcons } from '@expo/vector-icons'
 import Ripple from 'react-native-material-ripple'
 
@@ -30,11 +30,13 @@ export default class MenuScreen extends React.Component {
         data: section.data.map(item => ({ amount: 0, item }))
       }))
       : null,
+    prunedOrder: null,
     observations: '',
-    menu: this.props.navigation.getParam('menu')
+    menu: this.props.navigation.getParam('menu'),
+    isModalVisible: null
   }
 
-  componentDidUpdate() {
+  componentDidUpdate () {
     const { order } = this.state
     if (order === null) {
       this.setState({
@@ -43,6 +45,42 @@ export default class MenuScreen extends React.Component {
           item
         }))
       })
+    }
+  }
+
+  pruneOrder () {
+    const { order } = this.state
+    if (!order) return []
+    return order
+      .map(section => ({
+        ...section,
+        data: section.data.filter(item => item.amount > 0)
+      }))
+      .filter(section => section.data.length > 0)
+  }
+
+  computePrices () {
+    const { prunedOrder } = this.state
+    if (!prunedOrder || prunedOrder.length === 0) {
+      return {
+        subtotal: 0,
+        taxes: 0,
+        total: 0
+      }
+    }
+    const subtotal = prunedOrder
+      .map(section => ({
+        price: section.data
+          .map(i => i.amount * i.item.price)
+          .reduce((a, b) => a + b, 0)
+      }))
+      .map(section => section.price)
+      .reduce((a, b) => a + b, 0)
+    const taxes = subtotal * 0.13
+    return {
+      subtotal,
+      taxes,
+      total: subtotal + taxes
     }
   }
 
@@ -132,6 +170,7 @@ export default class MenuScreen extends React.Component {
       </View>
     )
   }
+
   renderOrderItem = ({ item: { amount, item }, index, section }) => {
     const {
       foodItem,
@@ -142,7 +181,7 @@ export default class MenuScreen extends React.Component {
       activeItem
     } = styles
     return (
-      <View style={[foodItem, amount !== 0 && activeItem]}>
+      <View style={[foodItem]}>
         <Image
           style={styles.foodOrderImage}
           source={{
@@ -177,6 +216,7 @@ export default class MenuScreen extends React.Component {
       </View>
     )
   }
+
   goToHome = () => {
     const { navigate } = this.props.navigation
     const { menu, franchise } = this.state
@@ -187,17 +227,73 @@ export default class MenuScreen extends React.Component {
     return <SectionHeader title={section.title} />
   }
 
-  orderModalState = {
-    modalVisible: false,
-  };
+  renderModalContent = () => {
+    const {
+      modalContent,
+      modalHeader,
+      foodGrid,
+      buttonPlaceOrder,
+      modalPrices,
+      modalPricesContainer,
+      rippleText
+    } = styles
+    const { prunedOrder } = this.state
+    const { subtotal, taxes, total } = this.computePrices()
+    console.log(this.computePrices())
+    return (
+      <View style={modalContent}>
+        <View style={modalHeader}>
+          <Text style={{ fontSize: 20, color: '#666', marginLeft: 5 }}>
+            Order summary
+          </Text>
+        </View>
+        <ScrollView style={foodGrid}>
+          <SectionList
+            sections={prunedOrder} // Use the order instead of the menu for easier access to the amount
+            keyExtractor={({ amount, item }, index) =>
+              index + item.name.toPascalCase()
+            }
+            extraData={this.state}
+            renderItem={this.renderOrderItem}
+            renderSectionHeader={this.renderSectionHeader}
+          />
+        </ScrollView>
+        <View style={modalPricesContainer}>
+          <View style={modalPrices}>
+            <Text>Subtotal: </Text>
+            <Text>CRC {subtotal}</Text>
+          </View>
+          <View style={modalPrices}>
+            <Text>Taxes (13%): </Text>
+            <Text>CRC {taxes}</Text>
+          </View>
+          <View style={modalPrices}>
+            <Text>Total: </Text>
+            <Text>CRC {total}</Text>
+          </View>
+        </View>
 
-  setModalVisible(visible) {
-    this.orderModalState.modalVisible = visible;
+        <Ripple
+          rippleColor={'#rgba(255,255,255,0.8)'}
+          rippleContainerBorderRadius={20}
+          style={buttonPlaceOrder}
+          onPress={() => this.setState({ isModalVisible: null })}
+        >
+          <Text style={rippleText}>Confirm</Text>
+        </Ripple>
+      </View>
+    )
   }
 
-  render() {
+  render () {
     const { menu, order } = this.state
-    const { foodGrid, buttonPlaceOrder, modalContainer } = styles
+    const {
+      foodGrid,
+      buttonPlaceOrder,
+      modalContainer,
+      isModalVisible,
+      rippleText
+    } = styles
 
     if (this.props.navigation.getParam('menu') === undefined) {
       return <UndefinedMenu navFunction={this.goToHome} />
@@ -205,65 +301,14 @@ export default class MenuScreen extends React.Component {
 
     return (
       <View style={{ backgroundColor: '#fff', height: '100%' }}>
-
         <Modal
-          animationType="slide"
+          isVisible={this.state.isModalVisible === 2}
           transparent={true}
-          isVisible={this.orderModalState.modalVisible}
-          onRequestClose={() => {
-            Alert.alert('Modal has been closed.');
-          }}>
-          <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.7)" }}>
-            <View style={modalContainer} >
-              <View style={styles.modalHeader}>
-                <Text style={{ fontSize: 20, color: "#666", marginLeft:5}}>Order summary</Text>
-                <Ripple
-                  rippleColor={'#rgba(255,255,255,0.8)'}
-                  rippleContainerBorderRadius={20}
-                >
-                  <Text style={{ borderRadius: 20, backgroundColor: "#900", color: "#fff", padding: 15, height: 15, width: 15, fontSize: 11 }}>X</Text>
-                </Ripple>
-              </View>
-              <View style={{backgroundColor:"#f5f5f5", padding:10,flexDirection:"row",justifyContent:"space-between"}}>
-                <View style={{flex:1, borderWidth: 1, marginRight: 5, padding: 5, borderRadius: 8,borderColor: "#A5A9FC"}}>
-                  <Text>Taxes: </Text>
-                  <Text>CRC 2000</Text>
-                </View>
-                <View style={{flex:1, borderWidth: 1, marginRight: 5, padding: 5, borderRadius: 8,borderColor: "#A5A9FC"}}>
-                  <Text>Subtotal: </Text>
-                  <Text>CRC 3025</Text>
-                </View>
-                <View style={{flex:1, borderWidth: 1, marginRight: 5, padding: 5, borderRadius: 8,borderColor: "#A5A9FC"}}>
-                  <Text>Total: </Text>
-                  <Text>CRC 5025</Text>
-                </View>
-              </View>
-              <ScrollView style={foodGrid}>
-                <SectionList
-                  sections={order} // Use the order instead of the menu for easier access to the amount
-                  keyExtractor={({ amount, item }, index) =>
-                    index + item.name.toPascalCase()
-                  }
-                  extraData={this.state}
-                  renderItem={this.renderOrderItem}
-                  renderSectionHeader={this.renderSectionHeader}
-                />
-              </ScrollView>
-
-              <Ripple
-                rippleColor={'#rgba(255,255,255,0.8)'}
-                rippleContainerBorderRadius={20}
-                style={styles.buttonPlaceOrder}
-              >
-                <Text style={{
-                  color: '#fff',
-                  fontWeight: 'bold',
-                  fontSize: 20,
-                  textAlign: 'center'
-                }}>Confirm</Text>
-              </Ripple>
-            </View>
-          </View>
+          animationIn={'slideInLeft'}
+          animationOut={'slideOutRight'}
+          onBackdropPress={() => this.setState({ isModalVisible: null })}
+        >
+          {this.renderModalContent()}
         </Modal>
 
         <ScrollView style={foodGrid}>
@@ -283,36 +328,17 @@ export default class MenuScreen extends React.Component {
           rippleContainerBorderRadius={20}
           style={buttonPlaceOrder}
           onPress={() => {
-            /*Alert.alert(
-              'Your order',
-              order
-                .map(
-                  section =>
-                    `${section.title.toUpperCase()}: ${section.data
-                      .map(
-                        x =>
-                          `${x.amount} x ${x.item.name} (${x.item.currency} ${
-                          x.item.price
-                          })`
-                      )
-                      .join(', ')}`
+            this.setState({ prunedOrder: this.pruneOrder() }, () => {
+              if (this.state.prunedOrder.length === 0) {
+                Alert.alert(
+                  'Empty order',
+                  "You haven't added any menu items yet"
                 )
-                .join('; ')
-            )*/
-            this.setModalVisible(true)
-          }
-          }
+              } else this.setState({ isModalVisible: 2 })
+            })
+          }}
         >
-          <Text
-            style={{
-              color: '#fff',
-              fontWeight: 'bold',
-              fontSize: 20,
-              textAlign: 'center'
-            }}
-          >
-            Place Order
-          </Text>
+          <Text style={rippleText}>Place Order</Text>
         </Ripple>
       </View>
     )
@@ -365,6 +391,33 @@ const UndefinedMenu = ({ navFunction }) => {
 }
 
 const styles = StyleSheet.create({
+  rippleText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 20,
+    textAlign: 'center'
+  },
+  modalPricesContainer: {
+    padding: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  modalPrices: {
+    flex: 1,
+    borderWidth: 1,
+    marginRight: 5,
+    padding: 5,
+    borderRadius: 8,
+    borderColor: '#A5A9FC'
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    padding: 1,
+    justifyContent: 'center',
+    borderRadius: 10,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    height: '80%'
+  },
   sectionHeaderContainer: {
     backgroundColor: '#fbfbfb',
     paddingVertical: 8,
@@ -488,22 +541,16 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     padding: 10
   },
-  modalContainer: {
-    width: "95%",
-    height: "80%",
-    borderRadius: 10,
-    backgroundColor: "#fff",
-  },
   modalHeader: {
     borderBottomWidth: 1,
-    borderColor: "#e5e5e5",
-    justifyContent: "space-between",
-    alignItems: "center",
+    borderColor: '#e5e5e5',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     padding: 10,
-    backgroundColor: "#fff",
-    flexDirection: "row",
+    backgroundColor: '#fff',
+    flexDirection: 'row',
     marginBottom: 10,
-    borderRadius: 20,
+    borderRadius: 20
   }
 })
 
