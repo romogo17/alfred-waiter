@@ -15,6 +15,7 @@ import {
 import Modal from 'react-native-modal'
 import { Ionicons, EvilIcons } from '@expo/vector-icons'
 import Ripple from 'react-native-material-ripple'
+import { AsyncStorage } from "react-native"
 
 export default class MenuScreen extends React.Component {
   static navigationOptions = {
@@ -33,7 +34,8 @@ export default class MenuScreen extends React.Component {
     prunedOrder: null,
     observations: '',
     menu: this.props.navigation.getParam('menu'),
-    isModalVisible: null
+    isModalVisible: null,
+    orders: []
   }
 
   componentDidUpdate () {
@@ -227,6 +229,36 @@ export default class MenuScreen extends React.Component {
     return <SectionHeader title={section.title} />
   }
 
+  _storeData = async (orden) => {
+    this._retrieveData()
+    let a = this.state.orders.slice() //creates the clone of the state
+    a.push(orden)
+    this.setState({orders: a})
+    // console.log(this.state.orders)
+    try {
+      await AsyncStorage.setItem('orders', JSON.stringify(this.state.orders))
+    } catch (error) {
+      // Error saving data
+      console.log(error.message)
+    }
+  }
+
+  _retrieveData = async () => {
+    try {
+      const value = await AsyncStorage.getItem('orders')
+      if (value !== null) {
+        // We have data!!
+        console.log(value);
+        this.setState({orders: value})
+      }else{
+        this.setState({orders: []})
+      }
+     } catch (error) {
+       // Error retrieving data
+       console.log(error.message)
+     }
+  }
+
   renderModalContent = () => {
     const {
       modalContent,
@@ -277,7 +309,10 @@ export default class MenuScreen extends React.Component {
           rippleColor={'#rgba(255,255,255,0.8)'}
           rippleContainerBorderRadius={20}
           style={buttonPlaceOrder}
-          onPress={() => this.setState({ isModalVisible: null })}
+          onPress={() => {
+            this.setState({ isModalVisible: null })
+            this._storeData(prunedOrder)
+          }}
         >
           <Text style={rippleText}>Confirm</Text>
         </Ripple>
@@ -306,7 +341,10 @@ export default class MenuScreen extends React.Component {
           transparent={true}
           animationIn={'slideInLeft'}
           animationOut={'slideOutRight'}
-          onBackdropPress={() => this.setState({ isModalVisible: null })}
+          onBackdropPress={() => {
+            this.setState({ isModalVisible: null })
+            this._storeData()
+          }}
         >
           {this.renderModalContent()}
         </Modal>
