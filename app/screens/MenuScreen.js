@@ -249,7 +249,7 @@ export default class MenuScreen extends React.Component {
       if (value !== null) {
         // We have data!!
         console.log(value);
-        this.setState({orders: value})
+        this.setState({orders: JSON.parse(value)})
       }else{
         this.setState({orders: []})
       }

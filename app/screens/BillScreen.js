@@ -16,12 +16,17 @@ export default class BillScreen extends React.Component {
     title: 'Bill'
   }
 
+  state = {
+    orders: []
+  }
+
   _retrieveData = async () => {
     try {
       const value = await AsyncStorage.getItem('orders')
       if (value !== null) {
         // We have data!!
         console.log(JSON.parse(value))
+        this.setState({orders: JSON.parse(value)})
       }
      } catch (error) {
        // Error retrieving data
@@ -39,7 +44,7 @@ export default class BillScreen extends React.Component {
       modalPricesContainer,
       rippleText
     } = styles
-    // const { prunedOrder } = this.state
+    const { orders } = this.state
     // const { subtotal, taxes, total } = this.computePrices()
     // console.log(this.computePrices())
     return (
@@ -50,15 +55,15 @@ export default class BillScreen extends React.Component {
           </Text>
         </View> */}
         <ScrollView style={foodGrid}>
-          {/* <SectionList
-            sections={prunedOrder} // Use the order instead of the menu for easier access to the amount
+          <SectionList
+            sections={orders} // Use the order instead of the menu for easier access to the amount
             keyExtractor={({ amount, item }, index) =>
               index + item.name.toPascalCase()
             }
             extraData={this.state}
             renderItem={this.renderOrderItem}
             renderSectionHeader={this.renderSectionHeader}
-          /> */}
+          />
         </ScrollView>
         <View style={modalPricesContainer}>
           <View style={modalPrices}>
@@ -147,3 +152,11 @@ const styles = StyleSheet.create({
     borderRadius: 20
   }
 })
+
+String.prototype.toPascalCase = function () {
+  return this.match(/[a-z]+/gi)
+    .map(function (word) {
+      return word.charAt(0).toUpperCase() + word.substr(1).toLowerCase()
+    })
+    .join('')
+}
