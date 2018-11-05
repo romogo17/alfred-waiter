@@ -40,20 +40,43 @@ export default class MenuScreen extends React.Component {
     orders: []
   }
 
-  componentDidUpdate () {
-    const { order } = this.state
-    if (order === null) {
-      this.setState({
-        order: this.props.navigation.getParam('menu').data.map(section => ({
-          ...section,
-          data: section.data.map(item => ({ amount: 0, item }))
-        })),
-        currentBillId: this.props.navigation.getParam('currentBillId'),
-        tableId: this.props.navigation.getParam('tableId'),
-        menu: this.props.navigation.getParam('menu')
-      })
-    }
+  componentDidMount () {
+    this.props.navigation.addListener('willFocus', route => {      AsyncStorage.getItem('currentBillId')
+        .then(val => this.setState({currentBillId: val}))
+
+      const { order } = this.state
+      if (order === null) {
+        this.setState({
+          order: this.props.navigation.getParam('menu')
+          ? this.props.navigation.getParam('menu').data.map(section => ({
+            ...section,
+            data: section.data.map(item => ({ amount: 0, item }))
+          }))
+          : null,
+          currentBillId: this.props.navigation.getParam('currentBillId'),
+          tableId: this.props.navigation.getParam('tableId'),
+          menu: this.props.navigation.getParam('menu')
+        })
+      }
+    })
   }
+
+  // componentDidUpdate () {
+  //   const { order } = this.state
+  //   if (order === null) {
+  //     this.setState({
+  //       order: this.props.navigation.getParam('menu')
+  //       ? this.props.navigation.getParam('menu').data.map(section => ({
+  //         ...section,
+  //         data: section.data.map(item => ({ amount: 0, item }))
+  //       }))
+  //       : null,
+  //       currentBillId: this.props.navigation.getParam('currentBillId'),
+  //       tableId: this.props.navigation.getParam('tableId'),
+  //       menu: this.props.navigation.getParam('menu')
+  //     })
+  //   }
+  // }
 
   clearOrder () {
     const { menu } = this.state
@@ -265,7 +288,6 @@ export default class MenuScreen extends React.Component {
   }
 
   updateBillPrices = currentBillId => {
-    console.log("AQUI ESTOY!")
     return fetch(
       `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}/orders`
     )
@@ -297,32 +319,6 @@ export default class MenuScreen extends React.Component {
       })
   }
 
-  // _storeData = async orden => {
-  //   this._retrieveData()
-  //   const { orders } = this.state
-  //   this.setState({ orders: [...orders, orden] })
-  //   try {
-  //     await AsyncStorage.setItem('orders', JSON.stringify(this.state.orders))
-  //   } catch (error) {
-  //     console.log(error.message)
-  //   }
-  // }
-
-  // _retrieveData = async () => {
-  //   try {
-  //     const value = await AsyncStorage.getItem('orders')
-  //     if (value !== null) {
-  //       // We have data!!
-  //       console.log(value)
-  //       this.setState({ orders: JSON.parse(value) })
-  //     } else {
-  //       this.setState({ orders: [] })
-  //     }
-  //   } catch (error) {
-  //     // Error retrieving data
-  //     console.log(error.message)
-  //   }
-  // }
 
   renderModalContent = () => {
     const {
@@ -388,7 +384,7 @@ export default class MenuScreen extends React.Component {
   }
 
   render () {
-    const { menu, order } = this.state
+    const { menu, order, currentBillId } = this.state
     const {
       foodGrid,
       buttonPlaceOrder,
@@ -397,7 +393,7 @@ export default class MenuScreen extends React.Component {
       rippleText
     } = styles
 
-    if (this.props.navigation.getParam('menu') === undefined) {
+    if (this.props.navigation.getParam('menu') === undefined || !currentBillId) {
       return <UndefinedMenu navFunction={this.goToHome} />
     }
 
@@ -467,9 +463,6 @@ const UndefinedMenu = ({ navFunction }) => {
     buttonMenu,
     textMenuButton
   } = styles
-  setTimeout(() => {
-    navFunction()
-  }, 2000)
   return (
     <View style={container}>
       <View style={splashContainer}>

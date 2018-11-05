@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Component } from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -6,46 +6,92 @@ import {
   FlatList,
   Image,
   Text,
-  View
+  View,
+  Platform,
+  TouchableOpacity,
+  StatusBar,
+  Alert
 } from 'react-native'
+import { format } from 'date-fns'
 import Modal from 'react-native-modal'
 import { Ionicons, EvilIcons } from '@expo/vector-icons'
 import Ripple from 'react-native-material-ripple'
-import { AsyncStorage } from "react-native"
+import { AsyncStorage } from 'react-native'
 
-export default class BillScreen extends React.Component {
+export default class BillScreen extends Component {
   static navigationOptions = {
     title: 'Bill'
   }
 
   state = {
     isModalVisible: null,
-    prunedOrder: null,
-    orders: [{ restaurantName: "Rostipollos", total: 12345, orderNumber: 87987156, quantity: 5 }, { restaurantName: "Rostipollos", total: 15451, orderNumber: 4564246968, quantity: 10 }, { restaurantName: "Rostipollos", total: 9788, orderNumber: 4567807, quantity: 4 }, { restaurantName: "Rostipollos", total: 12384, orderNumber: 5665564, quantity: 6 },] //traer todas las ordenes hechas
+    currentBillId: null,
+    currentBill: null,
+    orders: [],
+    currentShowingOrderId: null
   }
-  pruneOrder() {
-    const { order } = this.state
-    if (!order) return []
-    return order
-      .map(section => ({
-        ...section,
-        data: section.data.filter(item => item.amount > 0)
-      }))
-      .filter(section => section.data.length > 0)
+
+  componentDidMount () {
+    // This event fires every time the navigator focuses this screen.
+    // - Fetch the orders
+    // - Fetch the bill
+    this.props.navigation.addListener('willFocus', route => {
+      AsyncStorage.getItem('currentBillId')
+        .then(currentBillId => {
+          // console.log('====== BILL ======>', currentBillId)
+          this.setState({ currentBillId })
+          return currentBillId
+        })
+        .then(currentBillId => {
+          this.fetchBillInfo(currentBillId)
+          return currentBillId
+        })
+        .then(currentBillId => this.fetchBillOrders(currentBillId))
+    })
   }
-  _retrieveData = async () => {
-    try {
-      const value = await AsyncStorage.getItem('orders')
-      if (value !== null) {
-        // We have data!!
-        console.log(JSON.parse(value))
-        //this.setState({orders: JSON.parse(value)})
+
+  fetchBillInfo = currentBillId => {
+    return fetch(
+      `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}`
+    )
+      .then(response => response.json())
+      .then(responseJson => this.setState({ currentBill: responseJson }))
+  }
+
+  fetchBillOrders = currentBillId => {
+    return fetch(
+      `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}/orders`
+    )
+      .then(response => response.json())
+      .then(responseJson => this.setState({ orders: responseJson }))
+  }
+
+  requestBillHandler = () => {
+    const { currentBillId } = this.state
+    if (!currentBillId) return
+
+    return fetch(
+      `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}`,
+      {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          printBillRequest: new Date(),
+          updatedAt: new Date()
+        })
       }
-     } catch (error) {
-       // Error retrieving data
-       console.log(error.message)
-     }
+    )
+      .then(response => response.json())
+      .then(() => Alert.alert('Success', 'Printed bill successfully requested'))
   }
+
+  renderSectionHeader = ({ section }) => {
+    return <SectionHeader title={section.title} />
+  }
+
   renderOrderItem = ({ item: { amount, item }, index, section }) => {
     const {
       foodItem,
@@ -53,12 +99,14 @@ export default class BillScreen extends React.Component {
       foodItemInfo,
       foodTitle,
       foodTag,
-      activeItem
+      foodPrice,
+      activeItem,
+      foodOrderImage
     } = styles
     return (
       <View style={[foodItem]}>
         <Image
-          style={styles.foodOrderImage}
+          style={foodOrderImage}
           source={{
             uri: item.imageUri
               ? item.imageUri
@@ -70,9 +118,7 @@ export default class BillScreen extends React.Component {
             <Text style={foodTitle}>{item.name}</Text>
           </View>
           <View style={{ marginTop: 5 }}>
-            <Text style={styles.foodPrice}>
-              {item.currency + ' ' + item.price}
-            </Text>
+            <Text style={foodPrice}>{item.currency + ' ' + item.price}</Text>
           </View>
         </View>
 
@@ -91,17 +137,24 @@ export default class BillScreen extends React.Component {
       </View>
     )
   }
+
   renderModalContent = () => {
     const {
       modalContent,
       modalHeader,
       foodGrid,
       modalPrices,
-      modalPricesContainer,
+      modalPricesContainer
     } = styles
-    const { prunedOrder } = this.state
-    const { subtotal, taxes, total } = this.computePrices()
-    console.log(this.computePrices())
+    const { orders, currentShowingOrderId } = this.state
+    if (!currentShowingOrderId) {
+      return <View style={modalContent}>No current showing order</View>
+    }
+    const order = orders.find(e => e.id === currentShowingOrderId)
+    if (!order) {
+      return <View style={modalContent}>No order</View>
+    }
+    const { subtotal, taxes, total } = this.computePrices(order.items)
     return (
       <View style={modalContent}>
         <View style={modalHeader}>
@@ -111,7 +164,7 @@ export default class BillScreen extends React.Component {
         </View>
         <ScrollView style={foodGrid}>
           <SectionList
-            sections={prunedOrder} // Use the order instead of the menu for easier access to the amount
+            sections={order.items}
             keyExtractor={({ amount, item }, index) =>
               index + item.name.toPascalCase()
             }
@@ -137,16 +190,16 @@ export default class BillScreen extends React.Component {
       </View>
     )
   }
-  computePrices() { //Precios del modal, hay que hacer otro compute del total del bill
-    const { prunedOrder } = this.state
-    if (!prunedOrder || prunedOrder.length === 0) {
+
+  computePrices (order) {
+    if (!order || order.length === 0) {
       return {
         subtotal: 0,
         taxes: 0,
         total: 0
       }
     }
-    const subtotal = prunedOrder
+    const subtotal = order
       .map(section => ({
         price: section.data
           .map(i => i.amount * i.item.price)
@@ -162,8 +215,19 @@ export default class BillScreen extends React.Component {
     }
   }
 
-  computeBillPrices(){//Calcula los totales de la factura
+  countItems (order) {
+    if (!order || order.length === 0) return 0
+    return order
+      .map(section =>
+        section.data.map(i => i.amount).reduce((a, b) => a + b, 0)
+      )
+      .reduce((a, b) => a + b, 0)
+  }
 
+  goToHome = (reset = false) => {
+    const { navigate } = this.props.navigation
+    if (reset) navigate('Home', { closeSession: true })
+    else navigate('Home', {})
   }
 
   render () {
@@ -171,19 +235,22 @@ export default class BillScreen extends React.Component {
       foodGrid,
       modalPrices,
       modalPricesContainer,
+      buttonRequestBill,
+      buttonCloseSession,
+      rippleText
     } = styles
-    const { orders } = this.state
-    //const { subtotal, taxes, total } = this.computeBillPrices()
+    const { orders, currentBill, isModalVisible, currentBillId } = this.state
+
+    if (!currentBillId || !orders || !currentBill) {
+      return <UndefinedBill navFunction={this.goToHome} />
+    }
+
+    // const { subtotal, taxes, total } = this.computeBillPrices()
     // console.log(this.computePrices())
     return (
       <View style={{ backgroundColor: '#fff', height: '100%' }}>
-        {/* <View style={modalHeader}>
-          <Text style={{ fontSize: 20, color: '#666', marginLeft: 5 }}>
-            Order summary
-          </Text>
-        </View> */}
         <Modal
-          isVisible={this.state.isModalVisible === 2}
+          isVisible={isModalVisible === 2}
           transparent={true}
           animationIn={'slideInLeft'}
           animationOut={'slideOutRight'}
@@ -195,30 +262,90 @@ export default class BillScreen extends React.Component {
         </Modal>
         <ScrollView style={foodGrid}>
           <FlatList
-            data={this.state.orders}
-            renderItem={({ item }) => ( //Usar el item para traer los datos que se muestran
-              <View style={{padding:10,marginBottom:5,borderBottomWidth:1,borderColor:"#e5e5e5",width:"100%",flexDirection:"row",alignItems:"center"}}>
+            data={orders}
+            keyExtractor={(item, index) => item.id}
+            renderItem={({ item }) => (
+              <View
+                style={{
+                  padding: 10,
+                  marginBottom: 5,
+                  borderBottomWidth: 1,
+                  borderColor: '#e5e5e5',
+                  width: '100%',
+                  flexDirection: 'row',
+                  alignItems: 'center'
+                }}
+              >
                 <Image
                   style={{
-                    width: 70, 
-                    height: 70,
+                    width: 70,
+                    height: 70
                   }}
                   source={{
-                    uri: 'https://static1.squarespace.com/static/524caf98e4b0b5e2e07fd6cc/t/5b89d72c8a922d4be9a23d5d/1535760181457/Order.png'
+                    uri:
+                      'https://static1.squarespace.com/static/524caf98e4b0b5e2e07fd6cc/t/5b89d72c8a922d4be9a23d5d/1535760181457/Order.png'
                   }}
                 />
-                <View style={{ marginLeft:5,flexDirection:"column",flex:1,justifyContent:"space-between"}}>
-                  <Text style={{ color:"#99989F",fontSize:10}}>Order # {item.orderNumber}</Text>
-                  <Text style={{ color: "#6d6d6d", fontWeight: "bold", fontSize: 20 }}>{item.restaurantName}</Text>
-                  <Text style={{ color: "#6d6d6d", fontWeight: "bold", fontSize: 11 }}>Items {item.quantity}</Text> 
+                <View
+                  style={{
+                    marginLeft: 5,
+                    flexDirection: 'column',
+                    flex: 1,
+                    justifyContent: 'space-between'
+                  }}
+                >
+                  <Text style={{ color: '#99989F', fontSize: 8 }}>
+                    Order #{item.id}
+                  </Text>
+                  <Text
+                    style={{
+                      color: '#6d6d6d',
+                      fontWeight: 'bold',
+                      fontSize: 22
+                    }}
+                  >
+                    {this.countItems(item.items)} items
+                  </Text>
+                  <Text
+                    style={{
+                      color: '#6d6d6d',
+                      fontWeight: 'bold',
+                      fontSize: 11
+                    }}
+                  >
+                    {format(item.createdAt, 'hh:mm a')}
+                  </Text>
                 </View>
-                <View style={{ flexDirection: "column" ,flex:1,justifyContent:"space-between",alignItems:"flex-end"}}>
-                  <Text style={{ color: "#9196FD", fontWeight: "bold" }} 
-                  onPress={() => {
-                    this.setState(this.setState({ isModalVisible: 2 }))
-                    //Enviar el numero de orden o algo para cargar los items de una orden especifica en el modal
-                  }}>Details</Text>
-                  <Text style={{color:"#6d6d6d",fontWeight:"bold",fontSize:17}}>CRC {item.total}</Text>
+                <View
+                  style={{
+                    flexDirection: 'column',
+                    flex: 1,
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-end'
+                  }}
+                >
+                  <Text
+                    style={{ color: '#007aff', fontWeight: 'bold' }}
+                    onPress={() => {
+                      this.setState(
+                        this.setState({
+                          isModalVisible: 2,
+                          currentShowingOrderId: item.id
+                        })
+                      )
+                    }}
+                  >
+                    Details
+                  </Text>
+                  <Text
+                    style={{
+                      color: '#6d6d6d',
+                      fontWeight: 'bold',
+                      fontSize: 17
+                    }}
+                  >
+                    CRC {this.computePrices(item.items).total}
+                  </Text>
                 </View>
               </View>
             )}
@@ -227,24 +354,146 @@ export default class BillScreen extends React.Component {
         <View style={modalPricesContainer}>
           <View style={modalPrices}>
             <Text>Subtotal: </Text>
-            <Text>CRC 0 </Text>
+            <Text>CRC {currentBill.subtotal} </Text>
           </View>
           <View style={modalPrices}>
             <Text>Taxes (13%): </Text>
-            <Text>CRC 0</Text>
+            <Text>CRC {currentBill.tax} </Text>
           </View>
           <View style={modalPrices}>
             <Text>Total: </Text>
-            <Text>CRC 0</Text>
+            <Text>CRC {currentBill.total} </Text>
           </View>
         </View>
+        <Ripple
+          rippleColor={'#rgba(255,255,255,0.8)'}
+          rippleContainerBorderRadius={20}
+          style={buttonRequestBill}
+          onPress={this.requestBillHandler}
+        >
+          <Text style={rippleText}>Request Bill</Text>
+        </Ripple>
+        <Ripple
+          rippleColor={'#rgba(255,255,255,0.8)'}
+          rippleContainerBorderRadius={20}
+          style={buttonCloseSession}
+          onPress={() => {
+            AsyncStorage.removeItem('currentBillId')
+            this.goToHome(true)
+          }}
+        >
+          <Text style={rippleText}>Close Session</Text>
+        </Ripple>
       </View>
     )
   }
 }
 
-const styles = StyleSheet.create({
+const UndefinedBill = ({ navFunction }) => {
+  const {
+    container,
+    splashContainer,
+    splashTextContainer,
+    errorText,
+    buttonMenu,
+    textMenuButton
+  } = styles
+  return (
+    <View style={container}>
+      <View style={splashContainer}>
+        <Ionicons
+          name={
+            Platform.OS === 'ios'
+              ? `ios-information-circle-outline`
+              : 'md-information-circle-outline'
+          }
+          size={150}
+          color="#007aff"
+        />
+      </View>
+      <View style={splashTextContainer}>
+        <Text style={errorText}>You don't have a bill yet!</Text>
+      </View>
+      <TouchableOpacity
+        style={buttonMenu}
+        onPress={navFunction}
+        accessibilityLabel="Go to Home"
+      >
+        <Text style={textMenuButton}> Go to Home </Text>
+      </TouchableOpacity>
+      <StatusBar hidden />
+    </View>
+  )
+}
 
+const SectionHeader = ({ title }) => {
+  const { sectionHeaderContainer, sectionHeaderText } = styles
+  return (
+    <View style={sectionHeaderContainer}>
+      <Text style={sectionHeaderText}>{title}</Text>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  foodOrderImage: {
+    width: 60,
+    height: 60,
+    resizeMode: 'cover',
+    borderRadius: 5,
+    flex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.8,
+    shadowRadius: 2
+  },
+  foodPrice: {
+    fontWeight: 'bold',
+    color: '#8282A8'
+  },
+  sectionHeaderContainer: {
+    backgroundColor: '#fbfbfb',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#ededed'
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    color: '#8282A8'
+  },
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff'
+  },
+  splashContainer: {
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 20
+  },
+  splashTextContainer: {
+    alignItems: 'center',
+    marginHorizontal: 50
+  },
+  errorText: {
+    fontSize: 17,
+    color: 'rgba(96,100,109, 1)',
+    lineHeight: 24,
+    textAlign: 'justify'
+  },
+  buttonMenu: {
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginTop: 20
+  },
+  textMenuButton: {
+    color: '#007aff',
+    fontSize: 20,
+    lineHeight: 20,
+    fontStyle: 'italic'
+  },
   modalPricesContainer: {
     padding: 10,
     flexDirection: 'row',
@@ -291,9 +540,18 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     height: '100%'
   },
-  buttonPlaceOrder: {
+  buttonRequestBill: {
     borderRadius: 20,
-    backgroundColor: '#5EBA7D',
+    backgroundColor: '#8282A8',
+    marginRight: 15,
+    marginLeft: 15,
+    marginTop: 5,
+    marginBottom: 5,
+    padding: 10
+  },
+  buttonCloseSession: {
+    borderRadius: 20,
+    backgroundColor: '#99989F',
     marginRight: 15,
     marginLeft: 15,
     marginTop: 5,
@@ -357,7 +615,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderColor: 'rgba(0, 0, 0, 0.1)',
     height: '80%'
-  },
+  }
 })
 
 String.prototype.toPascalCase = function () {

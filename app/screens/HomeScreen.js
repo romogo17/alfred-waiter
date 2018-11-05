@@ -9,10 +9,13 @@ import {
   StatusBar,
   StyleSheet,
   Image,
-  TouchableOpacity
+  TouchableOpacity,
+  AsyncStorage
 } from 'react-native'
 import { BarCodeScanner, Permissions } from 'expo'
 import { Ionicons } from '@expo/vector-icons'
+
+let timer = null
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
@@ -30,6 +33,19 @@ export default class HomeScreen extends Component {
 
   componentDidMount () {
     this.requestCameraPermission()
+    this.props.navigation.addListener('willFocus', route => {
+      if (this.props.navigation.getParam('closeSession')) {
+        clearTimeout(timer)
+        this.props.navigation.setParams({ closeSession: false })
+        this.setState({
+          franchise: null,
+          currentBillId: null,
+          isLoading: null,
+          menu: null,
+          error: null
+        })
+      }
+    })
   }
 
   requestCameraPermission = async () => {
@@ -112,6 +128,7 @@ export default class HomeScreen extends Component {
       .then(response => response.json())
       .then(responseJson => {
         this.setState({ currentBillId: responseJson.id })
+        AsyncStorage.setItem('currentBillId', responseJson.id)
         return fetch(
           `https://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}`,
           {
@@ -261,7 +278,7 @@ const SuccessScreen = ({ franchise, navFunction }) => {
     buttonMenu,
     textMenuButton
   } = styles
-  setTimeout(() => {
+  timer = setTimeout(() => {
     navFunction()
   }, 1000)
   return (
