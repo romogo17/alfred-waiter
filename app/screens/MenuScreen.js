@@ -15,6 +15,7 @@ import {
 import Modal from 'react-native-modal'
 import { Ionicons, EvilIcons } from '@expo/vector-icons'
 import Ripple from 'react-native-material-ripple'
+import { AsyncStorage } from 'react-native'
 
 export default class MenuScreen extends React.Component {
   static navigationOptions = {
@@ -30,22 +31,62 @@ export default class MenuScreen extends React.Component {
         data: section.data.map(item => ({ amount: 0, item }))
       }))
       : null,
+    currentBillId: this.props.navigation.getParam('currentBillId'),
+    tableId: this.props.navigation.getParam('tableId'),
     prunedOrder: null,
     observations: '',
     menu: this.props.navigation.getParam('menu'),
-    isModalVisible: null
+    isModalVisible: null,
+    orders: []
   }
 
-  componentDidUpdate () {
-    const { order } = this.state
-    if (order === null) {
-      this.setState({
-        order: this.props.navigation.getParam('menu').items.map(item => ({
-          amount: 0,
-          item
-        }))
-      })
-    }
+  componentDidMount () {
+    this.props.navigation.addListener('willFocus', route => {      AsyncStorage.getItem('currentBillId')
+        .then(val => this.setState({currentBillId: val}))
+
+      const { order } = this.state
+      if (order === null) {
+        this.setState({
+          order: this.props.navigation.getParam('menu')
+          ? this.props.navigation.getParam('menu').data.map(section => ({
+            ...section,
+            data: section.data.map(item => ({ amount: 0, item }))
+          }))
+          : null,
+          currentBillId: this.props.navigation.getParam('currentBillId'),
+          tableId: this.props.navigation.getParam('tableId'),
+          menu: this.props.navigation.getParam('menu')
+        })
+      }
+    })
+  }
+
+  // componentDidUpdate () {
+  //   const { order } = this.state
+  //   if (order === null) {
+  //     this.setState({
+  //       order: this.props.navigation.getParam('menu')
+  //       ? this.props.navigation.getParam('menu').data.map(section => ({
+  //         ...section,
+  //         data: section.data.map(item => ({ amount: 0, item }))
+  //       }))
+  //       : null,
+  //       currentBillId: this.props.navigation.getParam('currentBillId'),
+  //       tableId: this.props.navigation.getParam('tableId'),
+  //       menu: this.props.navigation.getParam('menu')
+  //     })
+  //   }
+  // }
+
+  clearOrder () {
+    const { menu } = this.state
+    this.setState({
+      order: menu.data.map(section => ({
+        ...section,
+        data: section.data.map(item => ({ amount: 0, item }))
+      })),
+      prunedOrder: null
+    })
   }
 
   pruneOrder () {
@@ -59,16 +100,15 @@ export default class MenuScreen extends React.Component {
       .filter(section => section.data.length > 0)
   }
 
-  computePrices () {
-    const { prunedOrder } = this.state
-    if (!prunedOrder || prunedOrder.length === 0) {
+  computePrices (order) {
+    if (!order || order.length === 0) {
       return {
         subtotal: 0,
         taxes: 0,
         total: 0
       }
     }
-    const subtotal = prunedOrder
+    const subtotal = order
       .map(section => ({
         price: section.data
           .map(i => i.amount * i.item.price)
@@ -227,6 +267,59 @@ export default class MenuScreen extends React.Component {
     return <SectionHeader title={section.title} />
   }
 
+  postOrderToApi = prunedOrder => {
+    const { currentBillId, tableId } = this.state
+    return fetch('https://alfred-waiter.herokuapp.com/api/orders', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: prunedOrder,
+        state: 'ORDERED',
+        tableId: tableId,
+        billsId: currentBillId
+      })
+    }).then(() => {
+      this.clearOrder()
+      return this.updateBillPrices(currentBillId)
+    })
+  }
+
+  updateBillPrices = currentBillId => {
+    return fetch(
+      `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}/orders`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        let subtotalAcc = 0, taxesAcc = 0, totalAcc = 0
+        responseJson.forEach(order => {
+          const {subtotal, taxes, total} = this.computePrices(order.items)
+          subtotalAcc += subtotal
+          taxesAcc += taxes
+          totalAcc += total
+        })
+        return fetch(
+          `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              total: totalAcc,
+              subtotal: subtotalAcc,
+              tax: taxesAcc,
+              updatedAt: new Date()
+            })
+          }
+        ).then(response => response.json())
+      })
+  }
+
+
   renderModalContent = () => {
     const {
       modalContent,
@@ -238,8 +331,7 @@ export default class MenuScreen extends React.Component {
       rippleText
     } = styles
     const { prunedOrder } = this.state
-    const { subtotal, taxes, total } = this.computePrices()
-    console.log(this.computePrices())
+    const { subtotal, taxes, total } = this.computePrices(prunedOrder)
     return (
       <View style={modalContent}>
         <View style={modalHeader}>
@@ -247,17 +339,19 @@ export default class MenuScreen extends React.Component {
             Order summary
           </Text>
         </View>
-        <ScrollView style={foodGrid}>
-          <SectionList
-            sections={prunedOrder} // Use the order instead of the menu for easier access to the amount
-            keyExtractor={({ amount, item }, index) =>
-              index + item.name.toPascalCase()
-            }
-            extraData={this.state}
-            renderItem={this.renderOrderItem}
-            renderSectionHeader={this.renderSectionHeader}
-          />
-        </ScrollView>
+        {prunedOrder && (
+          <ScrollView style={foodGrid}>
+            <SectionList
+              sections={prunedOrder} // Use the order instead of the menu for easier access to the amount
+              keyExtractor={({ amount, item }, index) =>
+                index + item.name.toPascalCase()
+              }
+              extraData={this.state}
+              renderItem={this.renderOrderItem}
+              renderSectionHeader={this.renderSectionHeader}
+            />
+          </ScrollView>
+        )}
         <View style={modalPricesContainer}>
           <View style={modalPrices}>
             <Text>Subtotal: </Text>
@@ -277,7 +371,11 @@ export default class MenuScreen extends React.Component {
           rippleColor={'#rgba(255,255,255,0.8)'}
           rippleContainerBorderRadius={20}
           style={buttonPlaceOrder}
-          onPress={() => this.setState({ isModalVisible: null })}
+          onPress={() => {
+            this.setState({ isModalVisible: null }, () => {
+              this.postOrderToApi(prunedOrder)
+            })
+          }}
         >
           <Text style={rippleText}>Confirm</Text>
         </Ripple>
@@ -286,7 +384,7 @@ export default class MenuScreen extends React.Component {
   }
 
   render () {
-    const { menu, order } = this.state
+    const { menu, order, currentBillId } = this.state
     const {
       foodGrid,
       buttonPlaceOrder,
@@ -295,7 +393,7 @@ export default class MenuScreen extends React.Component {
       rippleText
     } = styles
 
-    if (this.props.navigation.getParam('menu') === undefined) {
+    if (this.props.navigation.getParam('menu') === undefined || !currentBillId) {
       return <UndefinedMenu navFunction={this.goToHome} />
     }
 
@@ -306,7 +404,9 @@ export default class MenuScreen extends React.Component {
           transparent={true}
           animationIn={'slideInLeft'}
           animationOut={'slideOutRight'}
-          onBackdropPress={() => this.setState({ isModalVisible: null })}
+          onBackdropPress={() => {
+            this.setState({ isModalVisible: null })
+          }}
         >
           {this.renderModalContent()}
         </Modal>
@@ -363,9 +463,6 @@ const UndefinedMenu = ({ navFunction }) => {
     buttonMenu,
     textMenuButton
   } = styles
-  setTimeout(() => {
-    navFunction()
-  }, 2000)
   return (
     <View style={container}>
       <View style={splashContainer}>

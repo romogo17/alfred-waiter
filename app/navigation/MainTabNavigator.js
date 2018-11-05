@@ -8,7 +8,7 @@ import {
 import TabBarIcon from '../components/TabBarIcon'
 import HomeScreen from '../screens/HomeScreen'
 import MenuScreen from '../screens/MenuScreen'
-import SettingsScreen from '../screens/SettingsScreen'
+import BillScreen from '../screens/BillScreen'
 
 const HomeStack = createStackNavigator({
   Home: HomeScreen
@@ -46,19 +46,19 @@ MenuStack.navigationOptions = {
   )
 }
 
-const SettingsStack = createStackNavigator({
-  Settings: SettingsScreen
+const BillStack = createStackNavigator({
+  Bill: BillScreen
 })
 
-SettingsStack.navigationOptions = {
-  tabBarLabel: 'Settings',
+BillStack.navigationOptions = {
+  tabBarLabel: 'Bill',
   tabBarIcon: ({ focused }) => (
     <TabBarIcon
       focused={focused}
       name={
         Platform.OS === 'ios'
-          ? `ios-options${focused ? '' : '-outline'}`
-          : 'md-options'
+          ? `ios-cash${focused ? '' : '-outline'}`
+          : 'md-cash'
       }
     />
   )
@@ -67,5 +67,5 @@ SettingsStack.navigationOptions = {
 export default createBottomTabNavigator({
   HomeStack,
   MenuStack,
-  SettingsStack
+  BillStack
 })

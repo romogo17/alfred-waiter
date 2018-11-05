@@ -9,10 +9,13 @@ import {
   StatusBar,
   StyleSheet,
   Image,
-  TouchableOpacity
+  TouchableOpacity,
+  AsyncStorage
 } from 'react-native'
 import { BarCodeScanner, Permissions } from 'expo'
 import { Ionicons } from '@expo/vector-icons'
+
+let timer = null
 
 export default class HomeScreen extends Component {
   static navigationOptions = {
@@ -21,6 +24,7 @@ export default class HomeScreen extends Component {
   state = {
     hasCameraPermission: null,
     scannedTableId: null,
+    currentBillId: null,
     isLoading: null,
     menu: null,
     franchise: null,
@@ -29,6 +33,19 @@ export default class HomeScreen extends Component {
 
   componentDidMount () {
     this.requestCameraPermission()
+    this.props.navigation.addListener('willFocus', route => {
+      if (this.props.navigation.getParam('closeSession')) {
+        clearTimeout(timer)
+        this.props.navigation.setParams({ closeSession: false })
+        this.setState({
+          franchise: null,
+          currentBillId: null,
+          isLoading: null,
+          menu: null,
+          error: null
+        })
+      }
+    })
   }
 
   requestCameraPermission = async () => {
@@ -62,21 +79,23 @@ export default class HomeScreen extends Component {
   fetchTableInfo = () => {
     const { scannedTableId, isTaken } = this.state
     return fetch(
-      `http://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/currentBill`
+      `https://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}/currentBill`
     )
       .then(response => response.json())
       .then(responseJson => {
         if (responseJson.error) throw responseJson.error
 
+        // FIXME: Uncomment this then. It is commented for testing purposes
         // There is already a currentBill in that table
-        if (Object.keys(responseJson).length !== 0) {
-          throw {
-            message:
-              'This table appears to be taken. Please contact your waiter'
-          }
-        }
+        // if (Object.keys(responseJson).length !== 0) {
+        //   throw {
+        //     message:
+        //       'This table appears to be taken. Please contact your waiter'
+        //   }
+        // }
         return scannedTableId
       })
+      .then(() => this.createBillAndUpdateTable())
       .then(() => this.fetchRestaurant())
       .then(() => this.fetchMenu())
       .then(() => this.setState({ isLoading: false, error: null }))
@@ -88,6 +107,41 @@ export default class HomeScreen extends Component {
             isLoading: false
           },
           this.expireError
+        )
+      })
+  }
+
+  createBillAndUpdateTable = () => {
+    const { scannedTableId } = this.state
+    return fetch('https://alfred-waiter.herokuapp.com/api/bills', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        client: {
+          platform: Platform.OS
+        }
+      })
+    })
+      .then(response => response.json())
+      .then(responseJson => {
+        this.setState({ currentBillId: responseJson.id })
+        AsyncStorage.setItem('currentBillId', responseJson.id)
+        return fetch(
+          `https://alfred-waiter.herokuapp.com/api/tables/${scannedTableId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              currentBillId: responseJson.id,
+              updatedAt: new Date()
+            })
+          }
         )
       })
   }
@@ -121,8 +175,13 @@ export default class HomeScreen extends Component {
 
   goToMenu = () => {
     const { navigate } = this.props.navigation
-    const { menu, franchise } = this.state
-    navigate('Menu', { menu: menu, franchise })
+    const { menu, franchise, currentBillId, scannedTableId } = this.state
+    navigate('Menu', {
+      menu,
+      franchise,
+      currentBillId,
+      tableId: scannedTableId
+    })
   }
 
   render () {
@@ -219,7 +278,7 @@ const SuccessScreen = ({ franchise, navFunction }) => {
     buttonMenu,
     textMenuButton
   } = styles
-  setTimeout(() => {
+  timer = setTimeout(() => {
     navFunction()
   }, 1000)
   return (
