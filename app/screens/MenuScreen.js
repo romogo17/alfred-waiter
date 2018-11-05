@@ -15,7 +15,7 @@ import {
 import Modal from 'react-native-modal'
 import { Ionicons, EvilIcons } from '@expo/vector-icons'
 import Ripple from 'react-native-material-ripple'
-import { AsyncStorage } from "react-native"
+import { AsyncStorage } from 'react-native'
 
 export default class MenuScreen extends React.Component {
   static navigationOptions = {
@@ -31,6 +31,8 @@ export default class MenuScreen extends React.Component {
         data: section.data.map(item => ({ amount: 0, item }))
       }))
       : null,
+    currentBillId: this.props.navigation.getParam('currentBillId'),
+    tableId: this.props.navigation.getParam('tableId'),
     prunedOrder: null,
     observations: '',
     menu: this.props.navigation.getParam('menu'),
@@ -42,12 +44,26 @@ export default class MenuScreen extends React.Component {
     const { order } = this.state
     if (order === null) {
       this.setState({
-        order: this.props.navigation.getParam('menu').items.map(item => ({
-          amount: 0,
-          item
-        }))
+        order: this.props.navigation.getParam('menu').data.map(section => ({
+          ...section,
+          data: section.data.map(item => ({ amount: 0, item }))
+        })),
+        currentBillId: this.props.navigation.getParam('currentBillId'),
+        tableId: this.props.navigation.getParam('tableId'),
+        menu: this.props.navigation.getParam('menu')
       })
     }
+  }
+
+  clearOrder () {
+    const { menu } = this.state
+    this.setState({
+      order: menu.data.map(section => ({
+        ...section,
+        data: section.data.map(item => ({ amount: 0, item }))
+      })),
+      prunedOrder: null
+    })
   }
 
   pruneOrder () {
@@ -61,16 +77,15 @@ export default class MenuScreen extends React.Component {
       .filter(section => section.data.length > 0)
   }
 
-  computePrices () {
-    const { prunedOrder } = this.state
-    if (!prunedOrder || prunedOrder.length === 0) {
+  computePrices (order) {
+    if (!order || order.length === 0) {
       return {
         subtotal: 0,
         taxes: 0,
         total: 0
       }
     }
-    const subtotal = prunedOrder
+    const subtotal = order
       .map(section => ({
         price: section.data
           .map(i => i.amount * i.item.price)
@@ -229,35 +244,85 @@ export default class MenuScreen extends React.Component {
     return <SectionHeader title={section.title} />
   }
 
-  _storeData = async (orden) => {
-    this._retrieveData()
-    let a = this.state.orders.slice() //creates the clone of the state
-    a.push(orden)
-    this.setState({orders: a})
-    // console.log(this.state.orders)
-    try {
-      await AsyncStorage.setItem('orders', JSON.stringify(this.state.orders))
-    } catch (error) {
-      // Error saving data
-      console.log(error.message)
-    }
+  postOrderToApi = prunedOrder => {
+    const { currentBillId, tableId } = this.state
+    return fetch('https://alfred-waiter.herokuapp.com/api/orders', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: prunedOrder,
+        state: 'ORDERED',
+        tableId: tableId,
+        billsId: currentBillId
+      })
+    }).then(() => {
+      this.clearOrder()
+      return this.updateBillPrices(currentBillId)
+    })
   }
 
-  _retrieveData = async () => {
-    try {
-      const value = await AsyncStorage.getItem('orders')
-      if (value !== null) {
-        // We have data!!
-        console.log(value);
-        this.setState({orders: JSON.parse(value)})
-      }else{
-        this.setState({orders: []})
-      }
-     } catch (error) {
-       // Error retrieving data
-       console.log(error.message)
-     }
+  updateBillPrices = currentBillId => {
+    console.log("AQUI ESTOY!")
+    return fetch(
+      `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}/orders`
+    )
+      .then(response => response.json())
+      .then(responseJson => {
+        let subtotalAcc = 0, taxesAcc = 0, totalAcc = 0
+        responseJson.forEach(order => {
+          const {subtotal, taxes, total} = this.computePrices(order.items)
+          subtotalAcc += subtotal
+          taxesAcc += taxes
+          totalAcc += total
+        })
+        return fetch(
+          `https://alfred-waiter.herokuapp.com/api/bills/${currentBillId}`,
+          {
+            method: 'PATCH',
+            headers: {
+              Accept: 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              total: totalAcc,
+              subtotal: subtotalAcc,
+              tax: taxesAcc,
+              updatedAt: new Date()
+            })
+          }
+        ).then(response => response.json())
+      })
   }
+
+  // _storeData = async orden => {
+  //   this._retrieveData()
+  //   const { orders } = this.state
+  //   this.setState({ orders: [...orders, orden] })
+  //   try {
+  //     await AsyncStorage.setItem('orders', JSON.stringify(this.state.orders))
+  //   } catch (error) {
+  //     console.log(error.message)
+  //   }
+  // }
+
+  // _retrieveData = async () => {
+  //   try {
+  //     const value = await AsyncStorage.getItem('orders')
+  //     if (value !== null) {
+  //       // We have data!!
+  //       console.log(value)
+  //       this.setState({ orders: JSON.parse(value) })
+  //     } else {
+  //       this.setState({ orders: [] })
+  //     }
+  //   } catch (error) {
+  //     // Error retrieving data
+  //     console.log(error.message)
+  //   }
+  // }
 
   renderModalContent = () => {
     const {
@@ -270,8 +335,7 @@ export default class MenuScreen extends React.Component {
       rippleText
     } = styles
     const { prunedOrder } = this.state
-    const { subtotal, taxes, total } = this.computePrices()
-    console.log(this.computePrices())
+    const { subtotal, taxes, total } = this.computePrices(prunedOrder)
     return (
       <View style={modalContent}>
         <View style={modalHeader}>
@@ -279,17 +343,19 @@ export default class MenuScreen extends React.Component {
             Order summary
           </Text>
         </View>
-        <ScrollView style={foodGrid}>
-          <SectionList
-            sections={prunedOrder} // Use the order instead of the menu for easier access to the amount
-            keyExtractor={({ amount, item }, index) =>
-              index + item.name.toPascalCase()
-            }
-            extraData={this.state}
-            renderItem={this.renderOrderItem}
-            renderSectionHeader={this.renderSectionHeader}
-          />
-        </ScrollView>
+        {prunedOrder && (
+          <ScrollView style={foodGrid}>
+            <SectionList
+              sections={prunedOrder} // Use the order instead of the menu for easier access to the amount
+              keyExtractor={({ amount, item }, index) =>
+                index + item.name.toPascalCase()
+              }
+              extraData={this.state}
+              renderItem={this.renderOrderItem}
+              renderSectionHeader={this.renderSectionHeader}
+            />
+          </ScrollView>
+        )}
         <View style={modalPricesContainer}>
           <View style={modalPrices}>
             <Text>Subtotal: </Text>
@@ -310,8 +376,9 @@ export default class MenuScreen extends React.Component {
           rippleContainerBorderRadius={20}
           style={buttonPlaceOrder}
           onPress={() => {
-            this.setState({ isModalVisible: null })
-            this._storeData(prunedOrder)
+            this.setState({ isModalVisible: null }, () => {
+              this.postOrderToApi(prunedOrder)
+            })
           }}
         >
           <Text style={rippleText}>Confirm</Text>
@@ -343,7 +410,6 @@ export default class MenuScreen extends React.Component {
           animationOut={'slideOutRight'}
           onBackdropPress={() => {
             this.setState({ isModalVisible: null })
-            this._storeData()
           }}
         >
           {this.renderModalContent()}
