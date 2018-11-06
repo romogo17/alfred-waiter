@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "app",
-    "description": "A very interesting project.",
-    "slug": "app",
+    "name": "Alfred Waiter",
+    "description": "An app to order foor from within a restaurant.",
+    "slug": "alfred-waiter",
     "privacy": "public",
     "sdkVersion": "30.0.0",
     "platforms": ["ios", "android"],
@@ -19,7 +19,11 @@
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
+      "bundleIdentifier": "com.una.alfredwaiter",
       "supportsTablet": true
+    },
+    "android": {
+      "package": "com.una.alfredwaiter"
     }
   }
 }

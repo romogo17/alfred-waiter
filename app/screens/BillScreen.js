@@ -147,7 +147,7 @@ export default class BillScreen extends Component {
       modalPricesContainer
     } = styles
     const { orders, currentShowingOrderId } = this.state
-    if (!currentShowingOrderId) {
+    if (!currentShowingOrderId || !orders) {
       return <View style={modalContent}>No current showing order</View>
     }
     const order = orders.find(e => e.id === currentShowingOrderId)
@@ -379,6 +379,13 @@ export default class BillScreen extends Component {
           style={buttonCloseSession}
           onPress={() => {
             AsyncStorage.removeItem('currentBillId')
+            this.setState({
+              isModalVisible: null,
+              currentBillId: null,
+              currentBill: null,
+              orders: [],
+              currentShowingOrderId: null
+            })
             this.goToHome(true)
           }}
         >
